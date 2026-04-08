@@ -1,0 +1,12 @@
+{
+  "name": "billy",
+  "version": "1.0.0",
+  "description": "Claude Code account switcher — in onore di Billy Milligan",
+  "type": "module",
+  "bin": {
+    "billy": "./index.mjs"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.9.0"
+  }
+}
