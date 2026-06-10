@@ -73,6 +73,23 @@ Billy — Claude Code Switch
 
 Select one and Claude Code starts immediately, no login required.
 
+## Shared resources (skills, commands, agents, CLAUDE.md)
+
+Some Claude Code resources are things _you_ author and want identical across every identity — your skills, slash commands, subagents, and your global `CLAUDE.md`. Billy can keep these in sync via symlinks so you maintain a single source of truth instead of copying them into each account.
+
+The source of truth is `~/.agents/`:
+
+| Source | Linked into each account as |
+|---|---|
+| `~/.agents/skills/*` | `~/.claude-<name>/skills/*` |
+| `~/.agents/commands/*` | `~/.claude-<name>/commands/*` |
+| `~/.agents/agents/*` | `~/.claude-<name>/agents/*` |
+| `~/.agents/CLAUDE.md` | `~/.claude-<name>/CLAUDE.md` |
+
+When you **add a new account**, Billy asks whether to import these as symlinks. Your choice is stored per account (`sharedResources` in `accounts.json`). For every account that opted in, Billy **re-syncs at each launch**: it adds links for new resources, fixes outdated ones, and prunes broken links (e.g. a skill you removed from the source). Any source folder that doesn't exist is simply skipped, and real (non-symlink) files already present in an account are never overwritten. The sync is best-effort — it never blocks launching Claude Code.
+
+To enable it for an existing account, set `"sharedResources": true` on its entry in `accounts.json`. To relocate the source of truth, set the `BILLY_AGENTS_DIR` environment variable.
+
 ## Running two accounts simultaneously
 
 Open two terminal windows and run `billy` in each. Select a different account in each window — they run fully independently.
@@ -81,7 +98,7 @@ Open two terminal windows and run `billy` in each. Select a different account in
 
 | Path | Contents |
 |---|---|
-| `~/.config/billy/accounts.json` | Account list (name + config dir path) |
+| `~/.config/billy/accounts.json` | Account list (name, config dir path, shared-resources flag) |
 | `~/.claude-<name>/` | Claude Code config, credentials, and settings for that account |
 
 To remove an account, delete its entry from `accounts.json` and optionally remove its config directory.

@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-import { intro, outro, select, text, isCancel, cancel } from '@clack/prompts';
+import { intro, outro, select, text, confirm, log, isCancel, cancel } from '@clack/prompts';
 import { spawn } from 'child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
+import { syncSharedResources } from './sync.mjs';
 
 const CONFIG_DIR = join(homedir(), '.config', 'billy');
 const ACCOUNTS_FILE = join(CONFIG_DIR, 'accounts.json');
@@ -60,16 +61,35 @@ async function main() {
       bail(`Esiste già un account chiamato "${name.trim()}".`);
     }
 
+    const share = await confirm({
+      message: 'Importare le risorse condivise (skills, commands, agents, CLAUDE.md) da ~/.agents come symlink?',
+      initialValue: true,
+    });
+    if (isCancel(share)) bail();
+
     account = {
       id,
       name: name.trim(),
       configDir: join(homedir(), `.claude-${id}`),
+      sharedResources: share,
     };
 
     accounts.push(account);
     saveAccounts(accounts);
   } else {
     account = accounts.find(a => a.id === selected);
+  }
+
+  if (account.sharedResources) {
+    const { added, pruned, skipped, error } = syncSharedResources(account.configDir);
+    if (error) {
+      log.warn(`Sync risorse condivise saltato: ${error.message}`);
+    } else if (added || pruned) {
+      log.step(`Risorse condivise: ${added} symlink aggiornati, ${pruned} rimossi.`);
+    }
+    if (skipped?.length) {
+      log.warn(`Saltati (file reali, non symlink): ${skipped.join(', ')}`);
+    }
   }
 
   outro(`Avvio Claude Code come "${account.name}"...`);

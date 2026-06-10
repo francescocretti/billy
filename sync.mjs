@@ -1,0 +1,128 @@
+// Keep an account's config dir in sync with the central, shared resources in
+// ~/.agents/ via relative symlinks — so skills, commands, agents and your
+// global CLAUDE.md stay identical across every Billy identity.
+//
+// Inspired by the standalone `sync-skills` script, but scoped to a single
+// account, reimplemented in Node (no external dependency) and never fatal:
+// any error is reported, never thrown, so it can't block launching Claude.
+
+import {
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readdirSync,
+  readlinkSync,
+  statSync,
+  symlinkSync,
+  unlinkSync,
+} from 'fs';
+import { dirname, join, relative } from 'path';
+import { homedir } from 'os';
+
+const AGENTS_DIR = process.env.BILLY_AGENTS_DIR || join(homedir(), '.agents');
+
+// Source of truth lives at ~/.agents/<name>.
+//  - kind 'dir':  link every (non-dotfile) entry of the source dir into
+//                 <config>/<name>/. Covers skills (subdirs), commands and
+//                 agents (.md files) alike.
+//  - kind 'file': link the single source file to <config>/<name>.
+const RESOURCES = [
+  { kind: 'dir', name: 'skills' },
+  { kind: 'dir', name: 'commands' },
+  { kind: 'dir', name: 'agents' },
+  { kind: 'file', name: 'CLAUDE.md' },
+];
+
+// Create or fix a relative symlink at `linkPath` pointing to `targetPath`.
+// Real (non-symlink) files are never clobbered — we record them as skipped.
+function applyLink(linkPath, targetPath, result) {
+  const want = relative(dirname(linkPath), targetPath);
+
+  let stat = null;
+  try {
+    stat = lstatSync(linkPath);
+  } catch {
+    // nothing there yet
+  }
+
+  if (stat) {
+    if (!stat.isSymbolicLink()) {
+      result.skipped.push(linkPath);
+      return;
+    }
+    if (readlinkSync(linkPath) === want) return; // already correct
+    unlinkSync(linkPath);
+  }
+
+  symlinkSync(want, linkPath);
+  result.added++;
+}
+
+// Remove a symlink whose target no longer exists (existsSync follows links).
+function pruneIfBroken(linkPath, result) {
+  let stat = null;
+  try {
+    stat = lstatSync(linkPath);
+  } catch {
+    return;
+  }
+  if (stat.isSymbolicLink() && !existsSync(linkPath)) {
+    unlinkSync(linkPath);
+    result.pruned++;
+  }
+}
+
+// Drop broken symlinks in `dir` (e.g. a central skill that was deleted).
+function pruneDir(dir, result) {
+  for (const entry of readdirSync(dir)) {
+    pruneIfBroken(join(dir, entry), result);
+  }
+}
+
+/**
+ * Sync all shared resources into `configDir`.
+ * Returns { added, pruned, skipped: string[] }. Never throws.
+ */
+export function syncSharedResources(configDir) {
+  const result = { added: 0, pruned: 0, skipped: [] };
+
+  try {
+    if (!existsSync(AGENTS_DIR)) return result;
+    mkdirSync(configDir, { recursive: true });
+
+    for (const res of RESOURCES) {
+      const src = join(AGENTS_DIR, res.name);
+
+      if (res.kind === 'file') {
+        const link = join(configDir, res.name);
+        if (existsSync(src)) applyLink(link, src, result);
+        else pruneIfBroken(link, result); // source gone → drop a stale link
+        continue;
+      }
+
+      // kind === 'dir'
+      const dest = join(configDir, res.name);
+      if (!existsSync(src)) {
+        if (existsSync(dest)) pruneDir(dest, result);
+        continue;
+      }
+
+      mkdirSync(dest, { recursive: true });
+      for (const entry of readdirSync(src)) {
+        if (entry.startsWith('.')) continue; // skip .DS_Store & friends
+        // Guard against a source entry that vanished between readdir and stat.
+        try {
+          statSync(join(src, entry));
+        } catch {
+          continue;
+        }
+        applyLink(join(dest, entry), join(src, entry), result);
+      }
+      pruneDir(dest, result);
+    }
+  } catch (err) {
+    result.error = err;
+  }
+
+  return result;
+}
