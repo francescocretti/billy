@@ -86,7 +86,7 @@ The source of truth is `~/.agents/`:
 | `~/.agents/agents/*` | `~/.claude-<name>/agents/*` |
 | `~/.agents/CLAUDE.md` | `~/.claude-<name>/CLAUDE.md` |
 
-When you **add a new account**, Billy asks whether to import these as symlinks. Your choice is stored per account (`sharedResources` in `accounts.json`). For every account that opted in, Billy **re-syncs at each launch**: it adds links for new resources, fixes outdated ones, and prunes broken links (e.g. a skill you removed from the source). Any source folder that doesn't exist is simply skipped, and real (non-symlink) files already present in an account are never overwritten. The sync is best-effort — it never blocks launching Claude Code.
+When you **add a new account**, Billy asks whether to import these as symlinks. Your choice is stored per account (`sharedResources` in `accounts.json`). For every account that opted in, Billy **re-syncs at each launch**: it adds links for new resources, fixes outdated ones, and prunes broken links that point into the source (e.g. a skill you removed from `~/.agents`) — broken links you created towards anywhere else are left alone. Any source folder that doesn't exist is simply skipped, and real (non-symlink) files already present in an account are never overwritten. The sync is best-effort — it never blocks launching Claude Code.
 
 To enable it for an existing account, set `"sharedResources": true` on its entry in `accounts.json`. To relocate the source of truth, set the `BILLY_AGENTS_DIR` environment variable.
 

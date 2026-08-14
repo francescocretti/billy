@@ -78,6 +78,7 @@ async function main() {
     saveAccounts(accounts);
   } else {
     account = accounts.find(a => a.id === selected);
+    if (!account) bail(`Account "${selected}" non trovato in accounts.json.`);
   }
 
   if (account.sharedResources) {

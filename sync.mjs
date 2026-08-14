@@ -16,10 +16,10 @@ import {
   symlinkSync,
   unlinkSync,
 } from 'fs';
-import { dirname, join, relative } from 'path';
+import { dirname, join, relative, resolve, sep } from 'path';
 import { homedir } from 'os';
 
-const AGENTS_DIR = process.env.BILLY_AGENTS_DIR || join(homedir(), '.agents');
+const AGENTS_DIR = resolve(process.env.BILLY_AGENTS_DIR || join(homedir(), '.agents'));
 
 // Source of truth lives at ~/.agents/<name>.
 //  - kind 'dir':  link every (non-dotfile) entry of the source dir into
@@ -33,11 +33,20 @@ const RESOURCES = [
   { kind: 'file', name: 'CLAUDE.md' },
 ];
 
+// Where a symlink actually points, as an absolute path — regardless of
+// whether it was written in relative or absolute form.
+function linkTarget(linkPath) {
+  return resolve(dirname(linkPath), readlinkSync(linkPath));
+}
+
+function pointsIntoAgentsDir(linkPath) {
+  const target = linkTarget(linkPath);
+  return target === AGENTS_DIR || target.startsWith(AGENTS_DIR + sep);
+}
+
 // Create or fix a relative symlink at `linkPath` pointing to `targetPath`.
 // Real (non-symlink) files are never clobbered — we record them as skipped.
 function applyLink(linkPath, targetPath, result) {
-  const want = relative(dirname(linkPath), targetPath);
-
   let stat = null;
   try {
     stat = lstatSync(linkPath);
@@ -50,15 +59,17 @@ function applyLink(linkPath, targetPath, result) {
       result.skipped.push(linkPath);
       return;
     }
-    if (readlinkSync(linkPath) === want) return; // already correct
+    if (linkTarget(linkPath) === targetPath) return; // already correct
     unlinkSync(linkPath);
   }
 
-  symlinkSync(want, linkPath);
+  symlinkSync(relative(dirname(linkPath), targetPath), linkPath);
   result.added++;
 }
 
 // Remove a symlink whose target no longer exists (existsSync follows links).
+// Only links pointing into AGENTS_DIR are ours to prune — a broken link the
+// user created towards somewhere else is left alone.
 function pruneIfBroken(linkPath, result) {
   let stat = null;
   try {
@@ -66,7 +77,7 @@ function pruneIfBroken(linkPath, result) {
   } catch {
     return;
   }
-  if (stat.isSymbolicLink() && !existsSync(linkPath)) {
+  if (stat.isSymbolicLink() && !existsSync(linkPath) && pointsIntoAgentsDir(linkPath)) {
     unlinkSync(linkPath);
     result.pruned++;
   }
