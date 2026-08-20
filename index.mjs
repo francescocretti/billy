@@ -4,7 +4,7 @@ import { spawn } from 'child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
-import { syncSharedResources } from './sync.mjs';
+import { syncSharedResources, sharedMcpConfig } from './sync.mjs';
 
 const CONFIG_DIR = join(homedir(), '.config', 'billy');
 const ACCOUNTS_FILE = join(CONFIG_DIR, 'accounts.json');
@@ -81,6 +81,8 @@ async function main() {
     if (!account) bail(`Account "${selected}" non trovato in accounts.json.`);
   }
 
+  const claudeArgs = [];
+
   if (account.sharedResources) {
     const { added, pruned, skipped, error } = syncSharedResources(account.configDir);
     if (error) {
@@ -91,11 +93,17 @@ async function main() {
     if (skipped?.length) {
       log.warn(`Saltati (file reali, non symlink): ${skipped.join(', ')}`);
     }
+
+    const mcpConfig = sharedMcpConfig();
+    if (mcpConfig) {
+      claudeArgs.push('--mcp-config', mcpConfig);
+      log.step(`Server MCP condivisi caricati da ${mcpConfig}`);
+    }
   }
 
   outro(`Avvio Claude Code come "${account.name}"...`);
 
-  const child = spawn('claude', [], {
+  const child = spawn('claude', claudeArgs, {
     env: { ...process.env, CLAUDE_CONFIG_DIR: account.configDir },
     stdio: 'inherit',
   });

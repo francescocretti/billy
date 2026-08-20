@@ -90,6 +90,29 @@ When you **add a new account**, Billy asks whether to import these as symlinks. 
 
 To enable it for an existing account, set `"sharedResources": true` on its entry in `accounts.json`. To relocate the source of truth, set the `BILLY_AGENTS_DIR` environment variable.
 
+### Shared MCP servers
+
+MCP servers can't be shared by symlinking: user-scoped servers live inside each account's `.claude.json`, which also holds per-account state (login, org, per-project toggles). Instead, Billy uses Claude Code's `--mcp-config` flag.
+
+Put your shared servers in `~/.agents/mcp.json`, using the same format as a project `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "my-server": {
+      "command": "npx",
+      "args": ["-y", "some-mcp-server"]
+    }
+  }
+}
+```
+
+For every account with `sharedResources` enabled, Billy launches Claude Code with `--mcp-config ~/.agents/mcp.json`. These servers are loaded **in addition to** any servers the account configured on its own. Notes:
+
+- The shared servers only apply when launching through `billy` — running `claude` directly won't load them.
+- OAuth-authenticated remote servers still require logging in once per account: tokens are stored per config dir and can't be shared.
+- Project-scoped servers (`.mcp.json` in a repo) already work across accounts with no help from Billy.
+
 ## Running two accounts simultaneously
 
 Open two terminal windows and run `billy` in each. Select a different account in each window — they run fully independently.

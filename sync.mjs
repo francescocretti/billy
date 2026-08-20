@@ -91,6 +91,18 @@ function pruneDir(dir, result) {
 }
 
 /**
+ * Path of the shared MCP servers file — same `{ "mcpServers": { ... } }`
+ * format as a project `.mcp.json` — or null if none exists. Unlike the
+ * resources above it is not symlinked into accounts: `.claude.json` holds
+ * per-account state, so the file is handed to Claude Code via --mcp-config
+ * at launch instead.
+ */
+export function sharedMcpConfig() {
+  const file = join(AGENTS_DIR, 'mcp.json');
+  return existsSync(file) ? file : null;
+}
+
+/**
  * Sync all shared resources into `configDir`.
  * Returns { added, pruned, skipped: string[] }. Never throws.
  */
