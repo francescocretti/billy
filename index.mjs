@@ -29,57 +29,107 @@ function bail(message) {
   process.exit(0);
 }
 
+const SHARED_PROMPT =
+  'Importare le risorse condivise (skills, commands, agents, CLAUDE.md) da ~/.agents come symlink';
+
+async function createAccount(accounts) {
+  const name = await text({
+    message: 'Nome account (es. work, personal)',
+    validate: v => (!v.trim() ? 'Il nome non può essere vuoto.' : undefined),
+  });
+  if (isCancel(name)) bail();
+
+  const id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+  if (accounts.find(a => a.id === id)) {
+    bail(`Esiste già un account chiamato "${name.trim()}".`);
+  }
+
+  const share = await confirm({ message: `${SHARED_PROMPT}?`, initialValue: true });
+  if (isCancel(share)) bail();
+
+  const account = {
+    id,
+    name: name.trim(),
+    configDir: join(homedir(), `.claude-${id}`),
+    sharedResources: share,
+  };
+
+  accounts.push(account);
+  saveAccounts(accounts);
+  return account;
+}
+
+// Flip the shared-resources flag on an account that already exists. Without
+// this the choice is only ever offered while creating an account, so there is
+// no way to change your mind later — and accounts created before the flag
+// existed are stuck without it. Cancelling anywhere leaves everything as is.
+async function editSharedResources(accounts) {
+  const selected = await select({
+    message: 'Risorse condivise: per quale account?',
+    options: accounts.map(a => ({
+      value: a.id,
+      label: a.name,
+      hint: a.sharedResources ? 'attive' : 'non attive',
+    })),
+  });
+  if (isCancel(selected)) return;
+
+  const account = accounts.find(a => a.id === selected);
+  const share = await confirm({
+    message: `${SHARED_PROMPT} in "${account.name}"?`,
+    initialValue: account.sharedResources === true,
+  });
+  if (isCancel(share) || share === Boolean(account.sharedResources)) return;
+
+  account.sharedResources = share;
+  saveAccounts(accounts);
+
+  if (share) {
+    log.success(`"${account.name}": risorse condivise attive, sincronizzate al prossimo avvio.`);
+  } else {
+    // Turning it off only stops future syncs — links already in the config dir
+    // are left alone, so say so instead of implying a cleanup happened.
+    log.success(`"${account.name}": sync disattivato. I symlink già in ${account.configDir} restano.`);
+  }
+}
+
+async function pickAccount(accounts) {
+  for (;;) {
+    const options = [
+      ...accounts.map(a => ({
+        value: a.id,
+        label: a.name,
+        hint: a.sharedResources ? `${a.configDir} · condivise` : a.configDir,
+      })),
+      { value: '__new__', label: '+ Aggiungi account' },
+    ];
+
+    if (accounts.length) {
+      options.push({ value: '__shared__', label: '⚙ Risorse condivise' });
+    }
+
+    const selected = await select({ message: 'Quale account vuoi usare?', options });
+    if (isCancel(selected)) bail();
+
+    if (selected === '__shared__') {
+      await editSharedResources(accounts);
+      continue; // back to the account list, now showing the updated state
+    }
+
+    if (selected === '__new__') return createAccount(accounts);
+
+    const account = accounts.find(a => a.id === selected);
+    if (!account) bail(`Account "${selected}" non trovato in accounts.json.`);
+    return account;
+  }
+}
+
 async function main() {
   intro('Billy — Claude Code Switch');
 
   const accounts = loadAccounts();
-
-  const options = [
-    ...accounts.map(a => ({ value: a.id, label: a.name, hint: a.configDir })),
-    { value: '__new__', label: '+ Aggiungi account' },
-  ];
-
-  const selected = await select({
-    message: 'Quale account vuoi usare?',
-    options,
-  });
-
-  if (isCancel(selected)) bail();
-
-  let account;
-
-  if (selected === '__new__') {
-    const name = await text({
-      message: 'Nome account (es. work, personal)',
-      validate: v => (!v.trim() ? 'Il nome non può essere vuoto.' : undefined),
-    });
-    if (isCancel(name)) bail();
-
-    const id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-
-    if (accounts.find(a => a.id === id)) {
-      bail(`Esiste già un account chiamato "${name.trim()}".`);
-    }
-
-    const share = await confirm({
-      message: 'Importare le risorse condivise (skills, commands, agents, CLAUDE.md) da ~/.agents come symlink?',
-      initialValue: true,
-    });
-    if (isCancel(share)) bail();
-
-    account = {
-      id,
-      name: name.trim(),
-      configDir: join(homedir(), `.claude-${id}`),
-      sharedResources: share,
-    };
-
-    accounts.push(account);
-    saveAccounts(accounts);
-  } else {
-    account = accounts.find(a => a.id === selected);
-    if (!account) bail(`Account "${selected}" non trovato in accounts.json.`);
-  }
+  const account = await pickAccount(accounts);
 
   const claudeArgs = [];
 
