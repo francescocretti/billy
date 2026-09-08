@@ -149,3 +149,22 @@ export function syncSharedResources(configDir) {
 
   return result;
 }
+
+/**
+ * Absolute paths of the plugins shared across accounts, one per directory in
+ * ~/.agents/plugins/ (symlinks to a marketplace checkout are fine). They are
+ * handed to Claude Code via --plugin-dir at launch rather than installed into
+ * each account: session-only, so no plugin registry is duplicated per identity.
+ * Never throws.
+ */
+export function sharedPlugins() {
+  const dir = join(AGENTS_DIR, 'plugins');
+  try {
+    return readdirSync(dir)
+      .filter(name => !name.startsWith('.'))
+      .map(name => join(dir, name))
+      .filter(path => existsSync(join(path, '.claude-plugin', 'plugin.json')));
+  } catch {
+    return [];
+  }
+}

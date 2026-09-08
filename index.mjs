@@ -2,9 +2,9 @@
 import { intro, outro, select, text, confirm, log, isCancel, cancel } from '@clack/prompts';
 import { spawn } from 'child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { basename, join } from 'path';
 import { homedir } from 'os';
-import { syncSharedResources, sharedMcpConfig } from './sync.mjs';
+import { syncSharedResources, sharedMcpConfig, sharedPlugins } from './sync.mjs';
 
 const CONFIG_DIR = join(homedir(), '.config', 'billy');
 const ACCOUNTS_FILE = join(CONFIG_DIR, 'accounts.json');
@@ -99,6 +99,18 @@ async function main() {
       claudeArgs.push('--mcp-config', mcpConfig);
       log.step(`Server MCP condivisi caricati da ${mcpConfig}`);
     }
+  }
+
+  // Plugins are loaded for every account, whether or not it opted into the
+  // shared resources: --plugin-dir is session-only and writes no state, and a
+  // plugin like Warp's is what makes the terminal recognise the session as
+  // Claude Code at all.
+  const plugins = sharedPlugins();
+  for (const plugin of plugins) {
+    claudeArgs.push('--plugin-dir', plugin);
+  }
+  if (plugins.length) {
+    log.step(`Plugin condivisi: ${plugins.map(p => basename(p)).join(', ')}`);
   }
 
   outro(`Avvio Claude Code come "${account.name}"...`);

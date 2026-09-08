@@ -113,6 +113,25 @@ For every account with `sharedResources` enabled, Billy launches Claude Code wit
 - OAuth-authenticated remote servers still require logging in once per account: tokens are stored per config dir and can't be shared.
 - Project-scoped servers (`.mcp.json` in a repo) already work across accounts with no help from Billy.
 
+### Shared plugins (and terminal integration)
+
+Plugins are installed per config dir (`~/.claude/plugins/`), so a plugin installed on your main account is invisible to every other identity. That's what breaks terminal integrations: Warp, for instance, only recognises a session as Claude Code because the `warp` plugin emits OSC notifications from its hooks. Launch another account and the plugin isn't there, so the terminal sees a plain process and none of its special features light up.
+
+Billy fixes this with Claude Code's `--plugin-dir` flag: every directory in `~/.agents/plugins/` that contains a `.claude-plugin/plugin.json` is loaded at launch, for **every** account (unlike the resources above, this isn't gated on `sharedResources` — `--plugin-dir` is session-only and writes no state anywhere).
+
+Symlinks are fine, so you can point at a marketplace checkout and keep getting updates:
+
+```bash
+mkdir -p ~/.agents/plugins
+ln -s ~/.claude/plugins/marketplaces/claude-code-warp/plugins/warp ~/.agents/plugins/warp
+```
+
+Notes:
+
+- The plugin appears as `<name>@inline` instead of `<name>@<marketplace>`; check with `claude plugin list`.
+- Link the marketplace checkout, not `plugins/cache/<marketplace>/<name>/<version>/` — the cache path changes on every version bump.
+- The Warp plugin needs `jq` on your `PATH`.
+
 ## Running two accounts simultaneously
 
 Open two terminal windows and run `billy` in each. Select a different account in each window — they run fully independently.
@@ -122,6 +141,7 @@ Open two terminal windows and run `billy` in each. Select a different account in
 | Path | Contents |
 |---|---|
 | `~/.config/billy/accounts.json` | Account list (name, config dir path, shared-resources flag) |
+| `~/.agents/plugins/*` | Plugins loaded into every account via `--plugin-dir` |
 | `~/.claude-<name>/` | Claude Code config, credentials, and settings for that account |
 
 To remove an account, delete its entry from `accounts.json` and optionally remove its config directory.
