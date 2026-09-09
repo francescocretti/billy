@@ -3,11 +3,9 @@ import { intro, outro, note, select, text, confirm, log, isCancel, cancel } from
 import { spawn } from 'child_process';
 import {
   existsSync,
-  lstatSync,
   mkdirSync,
   readFileSync,
   readdirSync,
-  renameSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -47,6 +45,21 @@ function bail(message) {
   process.exit(0);
 }
 
+// Label/value rows for a note() panel, padded into two columns.
+function alignedRows(rows) {
+  const width = Math.max(...rows.map(([label]) => label.length));
+  return rows.map(([label, value]) => `${label.padEnd(width)}  ${value}`).join('\n');
+}
+
+// The shared-resources question only means something when there is a ~/.agents
+// to share from. Asking about a directory that doesn't exist is noise on the
+// very first run, which is exactly when it would be asked.
+async function askSharedResources() {
+  if (!existsSync(AGENTS_DIR)) return false;
+  const share = await confirm({ message: t('shared.prompt'), initialValue: true });
+  return isCancel(share) ? null : share;
+}
+
 function slugify(name) {
   return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
@@ -64,8 +77,8 @@ async function createAccount(accounts) {
     bail(t('new.exists', { name: name.trim() }));
   }
 
-  const share = await confirm({ message: t('shared.prompt'), initialValue: true });
-  if (isCancel(share)) bail();
+  const share = await askSharedResources();
+  if (share === null) bail();
 
   const account = {
     id,
@@ -206,26 +219,11 @@ function describeDefaultSetup() {
   return { email, projects };
 }
 
-// Shared plugins are often symlinks into a marketplace checkout under
-// ~/.claude — moving that directory breaks them, and sharedPlugins() would
-// then skip them in silence. Name them instead.
-function brokenSharedPluginLinks() {
-  const dir = join(AGENTS_DIR, 'plugins');
-  try {
-    return readdirSync(dir)
-      .filter(entry => !entry.startsWith('.'))
-      .filter(entry => {
-        const path = join(dir, entry);
-        return lstatSync(path).isSymbolicLink() && !existsSync(path);
-      });
-  } catch {
-    return [];
-  }
-}
-
 // Offered once, when Billy has no accounts yet and ~/.claude holds a real
-// setup. Without this the only way not to lose your existing history and
-// credentials is to hand-write accounts.json before the first launch.
+// setup. There is nothing to decide here: adopting costs nothing and takes
+// nothing away — ~/.claude stays where it is, and plain `claude` still reaches
+// it — so Billy only asks the one thing it cannot know, the account's name.
+// Afterwards the normal account list takes over.
 async function adoptExistingSetup(accounts) {
   const found = describeDefaultSetup();
   if (!found) return;
@@ -233,61 +231,29 @@ async function adoptExistingSetup(accounts) {
   const rows = [[t('adopt.dir'), CLAUDE_DEFAULT_DIR]];
   if (found.email) rows.push([t('adopt.account'), found.email]);
   rows.push([t('adopt.projects'), String(found.projects)]);
-  const width = Math.max(...rows.map(([label]) => label.length));
-  note(rows.map(([label, value]) => `${label.padEnd(width)}  ${value}`).join('\n'), t('adopt.title'));
-
-  const choice = await select({
-    message: t('adopt.question'),
-    options: [
-      { value: 'adopt', label: t('adopt.adopt'), hint: t('adopt.adoptHint') },
-      { value: 'move', label: t('adopt.move'), hint: t('adopt.moveHint') },
-      { value: 'skip', label: t('adopt.skip'), hint: t('adopt.skipHint') },
-    ],
-  });
-  if (isCancel(choice) || choice === 'skip') return;
+  note(alignedRows(rows), t('adopt.title'));
 
   const name = await text({
     message: t('adopt.name'),
     initialValue: 'personal',
     validate: v => (!v.trim() ? t('new.nameEmpty') : undefined),
   });
+  // Cancelling adopts nothing and leaves the list empty; the offer comes back
+  // on the next launch, since Billy still has no accounts.
   if (isCancel(name)) return;
 
-  const id = slugify(name);
-  let configDir = CLAUDE_DEFAULT_DIR;
+  const share = await askSharedResources();
+  if (share === null) return;
 
-  if (choice === 'move') {
-    const target = join(homedir(), `.claude-${id}`);
-    if (existsSync(target)) {
-      log.warn(t('adopt.targetExists', { dir: target }));
-      return;
-    }
-
-    const sure = await confirm({
-      message: t('adopt.moveWarning', { from: CLAUDE_DEFAULT_DIR, to: target }),
-      initialValue: false,
-    });
-    if (isCancel(sure) || !sure) return;
-
-    try {
-      renameSync(CLAUDE_DEFAULT_DIR, target);
-    } catch (err) {
-      log.warn(t('adopt.moveError', { message: err.message }));
-      return;
-    }
-    configDir = target;
-
-    const broken = brokenSharedPluginLinks();
-    if (broken.length) log.warn(t('adopt.brokenLinks', { list: broken.join(', ') }));
-  }
-
-  const share = await confirm({ message: t('shared.prompt'), initialValue: true });
-  if (isCancel(share)) return;
-
-  accounts.push({ id, name: name.trim(), configDir, sharedResources: share });
+  accounts.push({
+    id: slugify(name),
+    name: name.trim(),
+    configDir: CLAUDE_DEFAULT_DIR,
+    sharedResources: share,
+  });
   saveAccounts(accounts);
 
-  log.success(t(choice === 'move' ? 'adopt.moved' : 'adopt.adopted', { name: name.trim(), dir: configDir }));
+  log.success(t('adopt.adopted', { name: name.trim(), dir: CLAUDE_DEFAULT_DIR }));
 }
 
 // Billy juggles half a dozen directories across two config trees, so the one
@@ -305,8 +271,7 @@ function showInfo(accounts) {
     [t('info.mcp'), mcpConfig ?? t('info.none')],
   ];
 
-  const width = Math.max(...rows.map(([label]) => label.length));
-  note(rows.map(([label, value]) => `${label.padEnd(width)}  ${value}`).join('\n'), t('settings.info'));
+  note(alignedRows(rows), t('settings.info'));
 }
 
 // Everything that isn't "launch an account" lives behind one entry, so the
