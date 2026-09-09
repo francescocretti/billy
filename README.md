@@ -6,7 +6,7 @@ Billy is a minimal CLI tool for managing multiple [Claude Code](https://claude.a
 
 ## How it works
 
-Each account gets its own configuration directory (`~/.claude-<name>`), passed to Claude Code via the `CLAUDE_CONFIG_DIR` environment variable. The first time you launch an account, Claude Code will walk you through login. After that, credentials are persisted in that directory and login is never asked again.
+Each account gets its own configuration directory (`~/.claude-<name>`), passed to Claude Code via the `CLAUDE_CONFIG_DIR` environment variable. The first time you launch a new account, Claude Code will walk you through login. After that, credentials are persisted in that directory and login is never asked again. An account adopted from an existing `~/.claude` keeps that directory and its login, so it never asks.
 
 Account profiles are stored in `~/.config/billy/accounts.json`.
 
@@ -31,7 +31,7 @@ Then choose how to install the `billy` command globally:
 npm link
 ```
 
-Creates a symlink from the global npm bin to this project folder. Changes to `index.mjs` take effect immediately without reinstalling. If you move or delete the project folder, the command breaks.
+Creates a symlink from the global npm bin to this project folder. Source changes take effect immediately without reinstalling. If you move or delete the project folder, the command breaks.
 
 **Option B — `npm install -g .` (recommended for stable use)**
 
@@ -39,7 +39,7 @@ Creates a symlink from the global npm bin to this project folder. Changes to `in
 npm install -g .
 ```
 
-Installs billy as a proper global package, independent of the project folder's location. After any future changes to `index.mjs`, re-run this command to update.
+Installs billy as a proper global package, independent of the project folder's location. After any future source change, re-run this command to update.
 
 ## Usage
 
@@ -47,32 +47,55 @@ Installs billy as a proper global package, independent of the project folder's l
 billy
 ```
 
-On first run, you'll only see the option to add a new account:
+### First run
+
+What you see depends on whether you already use Claude Code.
+
+**If you already have a `~/.claude`** — the common case, since that setup is usually why you want a switcher — Billy finds it, shows what it found, and asks the one thing it cannot know:
 
 ```
-Billy — Claude Code Switch
+◇  Existing Claude Code setup found ──────────────────╮
+│                                                     │
+│  Directory    /Users/you/.claude                    │
+│  Logged in as you@example.com                       │
+│  Projects     21                                    │
+│                                                     │
+├─────────────────────────────────────────────────────╯
 
-◆ Which account do you want to use?
-│ ○ + Add account
+◆ What should Billy call this account?
+│ personal
 └
 ```
 
-Enter a name (e.g. `work` or `personal`). Billy will create an isolated config directory for it and launch Claude Code. Complete the login flow once — Billy will remember it from then on.
+Nothing is moved and nothing is lost: `~/.claude` stays where it is, keeps its history and credentials, and plain `claude` still reaches it. Billy just records it as an account so it shows up in the list. See [Migrating from the default Claude Code setup](#migrating-from-the-default-claude-code-setup) for the details.
 
-On subsequent runs, your saved accounts appear in the list:
+**On a clean machine**, there is nothing to adopt and you only get the option to add an account:
+
+```
+◆ Which account do you want to use?
+│ ○ + Add account
+│ ○ ⚙ Settings
+└
+```
+
+Enter a name (e.g. `work` or `personal`). Billy creates an isolated config directory for it and launches Claude Code. Complete the login flow once — Billy remembers it from then on.
+
+### Every run after that
+
+Your accounts appear in the list:
 
 ```
 Billy — Claude Code Switch
 
 ◆ Which account do you want to use?
 │ ● work        ~/.claude-work · shared
-│ ○ personal    ~/.claude-personal
+│ ○ personal    ~/.claude
 │ ○ + Add account
 │ ○ ⚙ Settings
 └
 ```
 
-Select an account and Claude Code starts immediately, no login required.
+Select one and Claude Code starts immediately, no login required.
 
 ## Settings
 
@@ -130,14 +153,18 @@ The source of truth is `~/.agents/`:
 
 | Source | Linked into each account as |
 |---|---|
-| `~/.agents/skills/*` | `~/.claude-<name>/skills/*` |
-| `~/.agents/commands/*` | `~/.claude-<name>/commands/*` |
-| `~/.agents/agents/*` | `~/.claude-<name>/agents/*` |
-| `~/.agents/CLAUDE.md` | `~/.claude-<name>/CLAUDE.md` |
+| `~/.agents/skills/*` | `<config dir>/skills/*` |
+| `~/.agents/commands/*` | `<config dir>/commands/*` |
+| `~/.agents/agents/*` | `<config dir>/agents/*` |
+| `~/.agents/CLAUDE.md` | `<config dir>/CLAUDE.md` |
 
-When you **add a new account**, Billy asks whether to import these as symlinks. Your choice is stored per account (`sharedResources` in `accounts.json`). To change it later — or to enable it on an account created before this option existed — pick **⚙ Risorse condivise** from the main menu, choose the account, and answer the same question. Turning it *off* only stops future syncs: symlinks already in that config dir are left where they are. For every account that opted in, Billy **re-syncs at each launch**: it adds links for new resources, fixes outdated ones, and prunes broken links that point into the source (e.g. a skill you removed from `~/.agents`) — broken links you created towards anywhere else are left alone. Any source folder that doesn't exist is simply skipped, and real (non-symlink) files already present in an account are never overwritten. The sync is best-effort — it never blocks launching Claude Code.
+**Turning it on.** Billy asks when you add an account, and stores the answer per account (`sharedResources` in `accounts.json`). To change it later — or to enable it on an account created before the option existed — go to **⚙ Settings → Shared resources**, pick the account, and answer the same question. Turning it *off* only stops future syncs: symlinks already in that config dir are left where they are.
 
-To enable it for an existing account, set `"sharedResources": true` on its entry in `accounts.json`. To relocate the source of truth, set the `BILLY_AGENTS_DIR` environment variable.
+**When it runs.** At every launch, for the account you are launching — not for all of them at once. Each account picks up a new skill the next time you open it.
+
+**What it does.** Adds links for new resources, fixes outdated ones, and prunes broken links that point into the source, such as a skill you deleted from `~/.agents`. Broken links pointing anywhere else are yours, and are left alone. A source folder that doesn't exist is skipped silently — if you have no `~/.agents/commands`, nothing happens for commands. Real (non-symlink) files already in an account are never overwritten; they are reported as skipped.
+
+The sync is best-effort: any error is reported and never blocks launching Claude Code. To relocate the source of truth, set the `BILLY_AGENTS_DIR` environment variable.
 
 ### Shared MCP servers
 
@@ -192,8 +219,10 @@ Open two terminal windows and run `billy` in each. Select a different account in
 |---|---|
 | `~/.config/billy/accounts.json` | Account list (name, config dir path, shared-resources flag) |
 | `~/.config/billy/settings.json` | Billy's own settings — currently just the UI language |
+| `~/.agents/skills,commands,agents,CLAUDE.md` | Shared resources, symlinked into opted-in accounts |
+| `~/.agents/mcp.json` | Shared MCP servers, passed with `--mcp-config` |
 | `~/.agents/plugins/*` | Plugins loaded into every account via `--plugin-dir` |
-| `~/.claude-<name>/` | Claude Code config, credentials, and settings for that account |
+| `~/.claude-<name>/` | Claude Code config, credentials, and settings for that account — `~/.claude` for an adopted one |
 
 ## Migrating from the default Claude Code setup
 
