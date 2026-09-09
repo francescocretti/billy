@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-import { intro, outro, select, text, confirm, log, isCancel, cancel } from '@clack/prompts';
+import { intro, outro, note, select, text, confirm, log, isCancel, cancel } from '@clack/prompts';
 import { spawn } from 'child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'fs';
 import { basename, join, sep } from 'path';
 import { homedir } from 'os';
-import { syncSharedResources, sharedMcpConfig, sharedPlugins } from './sync.mjs';
-import { LANGUAGES, getLanguage, setLanguage, t } from './i18n.mjs';
+import { AGENTS_DIR, syncSharedResources, sharedMcpConfig, sharedPlugins } from './sync.mjs';
+import { LANGUAGES, SETTINGS_FILE, getLanguage, setLanguage, t } from './i18n.mjs';
 
 const CONFIG_DIR = join(homedir(), '.config', 'billy');
 const ACCOUNTS_FILE = join(CONFIG_DIR, 'accounts.json');
@@ -162,6 +162,66 @@ async function chooseLanguage() {
   log.success(t('language.saved', { label: LANGUAGES.find(l => l.value === selected).label }));
 }
 
+// Billy juggles half a dozen directories across two config trees, so the one
+// screen that answers "where is all of this, actually?" earns its place.
+function showInfo(accounts) {
+  const plugins = sharedPlugins();
+  const mcpConfig = sharedMcpConfig();
+
+  const rows = [
+    [t('info.accounts'), String(accounts.length)],
+    [t('info.accountsFile'), ACCOUNTS_FILE],
+    [t('info.settingsFile'), SETTINGS_FILE],
+    [t('info.agentsDir'), existsSync(AGENTS_DIR) ? AGENTS_DIR : `${AGENTS_DIR} (${t('info.missing')})`],
+    [t('info.plugins'), plugins.length ? plugins.map(p => basename(p)).join(', ') : t('info.none')],
+    [t('info.mcp'), mcpConfig ?? t('info.none')],
+  ];
+
+  const width = Math.max(...rows.map(([label]) => label.length));
+  note(rows.map(([label, value]) => `${label.padEnd(width)}  ${value}`).join('\n'), t('settings.info'));
+}
+
+// Everything that isn't "launch an account" lives behind one entry, so the
+// main screen stays a list of accounts however many knobs Billy grows.
+async function settingsMenu(accounts) {
+  for (;;) {
+    const options = [];
+
+    if (accounts.length) {
+      options.push({
+        value: 'shared',
+        label: t('settings.shared'),
+        hint: t('settings.sharedHint', {
+          on: accounts.filter(a => a.sharedResources).length,
+          total: accounts.length,
+        }),
+      });
+      options.push({
+        value: 'delete',
+        label: t('settings.delete'),
+        hint: t('settings.deleteHint'),
+      });
+    }
+
+    options.push({
+      value: 'language',
+      label: t('settings.language'),
+      hint: LANGUAGES.find(l => l.value === getLanguage())?.label,
+    });
+    options.push({ value: 'info', label: t('settings.info') });
+    options.push({ value: 'back', label: t('settings.back') });
+
+    const choice = await select({ message: t('settings.title'), options });
+    // Escape and ← Back are the same thing: return to the account list.
+    if (isCancel(choice) || choice === 'back') return;
+
+    if (choice === 'shared') await editSharedResources(accounts);
+    else if (choice === 'delete') await deleteAccount(accounts);
+    else if (choice === 'language') await chooseLanguage();
+    else if (choice === 'info') showInfo(accounts);
+  }
+}
+
 async function pickAccount(accounts) {
   for (;;) {
     const options = [
@@ -171,30 +231,15 @@ async function pickAccount(accounts) {
         hint: a.sharedResources ? `${a.configDir} · ${t('menu.hint.shared')}` : a.configDir,
       })),
       { value: '__new__', label: t('menu.new') },
+      { value: '__settings__', label: t('menu.settings') },
     ];
-
-    if (accounts.length) {
-      options.push({ value: '__shared__', label: t('menu.shared') });
-      options.push({ value: '__delete__', label: t('menu.delete') });
-    }
-    options.push({ value: '__language__', label: t('menu.language') });
 
     const selected = await select({ message: t('menu.pick'), options });
     if (isCancel(selected)) bail();
 
-    // Every ⚙ entry loops back to the account list, which then shows the
-    // updated state (and, after a language change, the new wording).
-    if (selected === '__shared__') {
-      await editSharedResources(accounts);
-      continue;
-    }
-    if (selected === '__delete__') {
-      await deleteAccount(accounts);
-      continue;
-    }
-    if (selected === '__language__') {
-      await chooseLanguage();
-      continue;
+    if (selected === '__settings__') {
+      await settingsMenu(accounts);
+      continue; // back to the account list, showing the updated state
     }
 
     if (selected === '__new__') return createAccount(accounts);

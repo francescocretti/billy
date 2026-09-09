@@ -19,7 +19,7 @@ import {
 import { dirname, join, relative, resolve, sep } from 'path';
 import { homedir } from 'os';
 
-const AGENTS_DIR = resolve(process.env.BILLY_AGENTS_DIR || join(homedir(), '.agents'));
+export const AGENTS_DIR = resolve(process.env.BILLY_AGENTS_DIR || join(homedir(), '.agents'));
 
 // Source of truth lives at ~/.agents/<name>.
 //  - kind 'dir':  link every (non-dotfile) entry of the source dir into

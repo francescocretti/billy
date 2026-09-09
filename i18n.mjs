@@ -12,7 +12,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { homedir } from 'os';
 
-const SETTINGS_FILE = join(homedir(), '.config', 'billy', 'settings.json');
+export const SETTINGS_FILE = join(homedir(), '.config', 'billy', 'settings.json');
 
 export const LANGUAGES = [
   { value: 'en', label: 'English' },
@@ -26,9 +26,7 @@ const MESSAGES = {
 
     'menu.pick': 'Which account do you want to use?',
     'menu.new': '+ Add account',
-    'menu.shared': '⚙ Shared resources',
-    'menu.delete': '⚙ Delete account',
-    'menu.language': '⚙ Language',
+    'menu.settings': '⚙ Settings',
     'menu.hint.shared': 'shared',
     'menu.notFound': 'Account "{id}" not found in accounts.json.',
 
@@ -55,6 +53,24 @@ const MESSAGES = {
     'delete.doneWithDir': '"{name}" removed, along with {dir}.',
     'delete.dirError': 'Account removed, but {dir} could not be deleted: {message}',
 
+    'settings.title': 'Settings',
+    'settings.shared': 'Shared resources',
+    'settings.sharedHint': 'on for {on} of {total} accounts',
+    'settings.delete': 'Delete account',
+    'settings.deleteHint': 'the profile and, if you want, its config dir',
+    'settings.language': 'Language',
+    'settings.info': 'Where everything lives',
+    'settings.back': '← Back',
+
+    'info.accounts': 'Accounts',
+    'info.accountsFile': 'Account list',
+    'info.settingsFile': 'Billy settings',
+    'info.agentsDir': 'Shared resources',
+    'info.plugins': 'Shared plugins',
+    'info.mcp': 'Shared MCP servers',
+    'info.none': 'none',
+    'info.missing': 'missing',
+
     'language.which': 'Language',
     'language.saved': 'Language set to {label}.',
 
@@ -74,9 +90,7 @@ const MESSAGES = {
 
     'menu.pick': 'Quale account vuoi usare?',
     'menu.new': '+ Aggiungi account',
-    'menu.shared': '⚙ Risorse condivise',
-    'menu.delete': '⚙ Elimina account',
-    'menu.language': '⚙ Lingua',
+    'menu.settings': '⚙ Impostazioni',
     'menu.hint.shared': 'condivise',
     'menu.notFound': 'Account "{id}" non trovato in accounts.json.',
 
@@ -102,6 +116,24 @@ const MESSAGES = {
     'delete.done': '"{name}" rimosso dalla lista account. {dir} resta sul disco.',
     'delete.doneWithDir': '"{name}" rimosso, insieme a {dir}.',
     'delete.dirError': 'Account rimosso, ma {dir} non è stata eliminata: {message}',
+
+    'settings.title': 'Impostazioni',
+    'settings.shared': 'Risorse condivise',
+    'settings.sharedHint': 'attive su {on} account di {total}',
+    'settings.delete': 'Elimina account',
+    'settings.deleteHint': 'il profilo e, se vuoi, la sua config dir',
+    'settings.language': 'Lingua',
+    'settings.info': 'Dove sta ogni cosa',
+    'settings.back': '← Indietro',
+
+    'info.accounts': 'Account',
+    'info.accountsFile': 'Lista account',
+    'info.settingsFile': 'Impostazioni Billy',
+    'info.agentsDir': 'Risorse condivise',
+    'info.plugins': 'Plugin condivisi',
+    'info.mcp': 'Server MCP condivisi',
+    'info.none': 'nessuno',
+    'info.missing': 'assente',
 
     'language.which': 'Lingua',
     'language.saved': 'Lingua impostata: {label}.',

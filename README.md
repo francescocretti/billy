@@ -68,17 +68,46 @@ Billy — Claude Code Switch
 │ ● work        ~/.claude-work · shared
 │ ○ personal    ~/.claude-personal
 │ ○ + Add account
-│ ○ ⚙ Shared resources
-│ ○ ⚙ Delete account
-│ ○ ⚙ Language
+│ ○ ⚙ Settings
 └
 ```
 
-Select an account and Claude Code starts immediately, no login required. The `⚙` entries all loop back to this list once you're done, so you can change a setting and launch in the same run.
+Select an account and Claude Code starts immediately, no login required.
+
+## Settings
+
+Everything that isn't "launch an account" lives behind **⚙ Settings**, so the main screen stays a list of accounts however many knobs Billy grows. Each entry shows its current state as a hint:
+
+```
+◆ Settings
+│ ● Shared resources     on for 1 of 4 accounts
+│ ○ Delete account       the profile and, if you want, its config dir
+│ ○ Language             English
+│ ○ Where everything lives
+│ ○ ← Back
+└
+```
+
+`← Back` and Escape do the same thing, and returning from settings drops you back on the account list with the updated state — so you can change something and launch in the same run.
+
+**Where everything lives** answers the question a tool like this keeps raising, since it juggles directories across two config trees:
+
+```
+◇  Where everything lives ────────────────────────────────────────╮
+│                                                                 │
+│  Accounts             4                                         │
+│  Account list         /Users/you/.config/billy/accounts.json    │
+│  Billy settings       /Users/you/.config/billy/settings.json    │
+│  Shared resources     /Users/you/.agents                        │
+│  Shared plugins       warp                                      │
+│  Shared MCP servers   none                                      │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────╯
+```
 
 ### Deleting an account
 
-**⚙ Delete account** asks two separate questions, because they are two separate decisions:
+**Delete account** asks two separate questions, because they are two separate decisions:
 
 1. Remove the account from Billy's list — this only rewrites `accounts.json`.
 2. Delete its config directory — this erases the account's credentials, history and settings.
@@ -87,7 +116,7 @@ The second defaults to **no**, so answering through with Enter leaves the direct
 
 ### Language
 
-Billy speaks English and Italian. Pick one from **⚙ Language**; the choice is saved in `~/.config/billy/settings.json` and applies from the next screen onwards.
+Billy speaks English and Italian. Pick one from **Language**; the choice is saved in `~/.config/billy/settings.json` and applies from the next screen onwards.
 
 The language is never guessed from your system locale, so Billy stays in the language you chose on every machine you carry your dotfiles to. English is the default until you pick otherwise.
 
