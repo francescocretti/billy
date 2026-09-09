@@ -1,7 +1,17 @@
 #!/usr/bin/env node
 import { intro, outro, note, select, text, confirm, log, isCancel, cancel } from '@clack/prompts';
 import { spawn } from 'child_process';
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'fs';
+import {
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'fs';
 import { join, sep } from 'path';
 import { homedir } from 'os';
 import {
@@ -37,6 +47,10 @@ function bail(message) {
   process.exit(0);
 }
 
+function slugify(name) {
+  return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
 async function createAccount(accounts) {
   const name = await text({
     message: t('new.name'),
@@ -44,7 +58,7 @@ async function createAccount(accounts) {
   });
   if (isCancel(name)) bail();
 
-  const id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const id = slugify(name);
 
   if (accounts.find(a => a.id === id)) {
     bail(t('new.exists', { name: name.trim() }));
@@ -168,6 +182,114 @@ async function chooseLanguage() {
   log.success(t('language.saved', { label: LANGUAGES.find(l => l.value === selected).label }));
 }
 
+// A summary of the default Claude Code config dir, or null when there is no
+// real setup there. `.claude.json` is the marker: the directory alone gets
+// created by all sorts of things, an account file means it has been used.
+function describeDefaultSetup() {
+  const configFile = join(CLAUDE_DEFAULT_DIR, '.claude.json');
+  if (!existsSync(configFile)) return null;
+
+  let email = null;
+  try {
+    email = JSON.parse(readFileSync(configFile, 'utf8'))?.oauthAccount?.emailAddress ?? null;
+  } catch {
+    // unreadable or not JSON: the directory still counts, we just say less
+  }
+
+  let projects = 0;
+  try {
+    projects = readdirSync(join(CLAUDE_DEFAULT_DIR, 'projects')).length;
+  } catch {
+    // no projects yet
+  }
+
+  return { email, projects };
+}
+
+// Shared plugins are often symlinks into a marketplace checkout under
+// ~/.claude — moving that directory breaks them, and sharedPlugins() would
+// then skip them in silence. Name them instead.
+function brokenSharedPluginLinks() {
+  const dir = join(AGENTS_DIR, 'plugins');
+  try {
+    return readdirSync(dir)
+      .filter(entry => !entry.startsWith('.'))
+      .filter(entry => {
+        const path = join(dir, entry);
+        return lstatSync(path).isSymbolicLink() && !existsSync(path);
+      });
+  } catch {
+    return [];
+  }
+}
+
+// Offered once, when Billy has no accounts yet and ~/.claude holds a real
+// setup. Without this the only way not to lose your existing history and
+// credentials is to hand-write accounts.json before the first launch.
+async function adoptExistingSetup(accounts) {
+  const found = describeDefaultSetup();
+  if (!found) return;
+
+  const rows = [[t('adopt.dir'), CLAUDE_DEFAULT_DIR]];
+  if (found.email) rows.push([t('adopt.account'), found.email]);
+  rows.push([t('adopt.projects'), String(found.projects)]);
+  const width = Math.max(...rows.map(([label]) => label.length));
+  note(rows.map(([label, value]) => `${label.padEnd(width)}  ${value}`).join('\n'), t('adopt.title'));
+
+  const choice = await select({
+    message: t('adopt.question'),
+    options: [
+      { value: 'adopt', label: t('adopt.adopt'), hint: t('adopt.adoptHint') },
+      { value: 'move', label: t('adopt.move'), hint: t('adopt.moveHint') },
+      { value: 'skip', label: t('adopt.skip'), hint: t('adopt.skipHint') },
+    ],
+  });
+  if (isCancel(choice) || choice === 'skip') return;
+
+  const name = await text({
+    message: t('adopt.name'),
+    initialValue: 'personal',
+    validate: v => (!v.trim() ? t('new.nameEmpty') : undefined),
+  });
+  if (isCancel(name)) return;
+
+  const id = slugify(name);
+  let configDir = CLAUDE_DEFAULT_DIR;
+
+  if (choice === 'move') {
+    const target = join(homedir(), `.claude-${id}`);
+    if (existsSync(target)) {
+      log.warn(t('adopt.targetExists', { dir: target }));
+      return;
+    }
+
+    const sure = await confirm({
+      message: t('adopt.moveWarning', { from: CLAUDE_DEFAULT_DIR, to: target }),
+      initialValue: false,
+    });
+    if (isCancel(sure) || !sure) return;
+
+    try {
+      renameSync(CLAUDE_DEFAULT_DIR, target);
+    } catch (err) {
+      log.warn(t('adopt.moveError', { message: err.message }));
+      return;
+    }
+    configDir = target;
+
+    const broken = brokenSharedPluginLinks();
+    if (broken.length) log.warn(t('adopt.brokenLinks', { list: broken.join(', ') }));
+  }
+
+  const share = await confirm({ message: t('shared.prompt'), initialValue: true });
+  if (isCancel(share)) return;
+
+  accounts.push({ id, name: name.trim(), configDir, sharedResources: share });
+  saveAccounts(accounts);
+
+  log.success(t(choice === 'move' ? 'adopt.moved' : 'adopt.adopted', { name: name.trim(), dir: configDir }));
+}
+
 // Billy juggles half a dozen directories across two config trees, so the one
 // screen that answers "where is all of this, actually?" earns its place.
 function showInfo(accounts) {
@@ -260,6 +382,8 @@ async function main() {
   intro(t('intro'));
 
   const accounts = loadAccounts();
+  if (!accounts.length) await adoptExistingSetup(accounts);
+
   const account = await pickAccount(accounts);
 
   const claudeArgs = [];

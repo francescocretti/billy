@@ -197,18 +197,33 @@ Open two terminal windows and run `billy` in each. Select a different account in
 
 ## Migrating from the default Claude Code setup
 
-If you were already using Claude Code before installing Billy, your existing configuration, memory, settings, and credentials live in `~/.claude`. Creating a new account in Billy would start from scratch and lose access to all of that.
+If you used Claude Code before installing Billy, your history, projects, settings and credentials live in `~/.claude`. The first time you run Billy with no accounts yet, it notices that setup and asks what to do with it:
 
-To avoid this, manually add your existing directory to `~/.config/billy/accounts.json` before running Billy for the first time:
+```
+◇  Existing Claude Code setup found ──────────────────╮
+│                                                     │
+│  Directory    /Users/you/.claude                    │
+│  Logged in as you@example.com                       │
+│  Projects     21                                    │
+│                                                     │
+├─────────────────────────────────────────────────────╯
 
-```json
-[
-  {
-    "id": "personal",
-    "name": "personal",
-    "configDir": "/Users/your-username/.claude"
-  }
-]
+◆ What should Billy do with it?
+│ ● Use it as your first account   nothing moves; plain `claude` keeps working as this account
+│ ○ Move it into ~/.claude-<name>  Billy's convention; plain `claude` starts fresh and empty
+│ ○ Leave it alone                 new accounts start from scratch
+└
 ```
 
-This account will inherit everything from your previous Claude Code setup. Any additional accounts added through Billy will get their own fresh directory.
+**Use it as your first account** just records `~/.claude` as that account's config dir. Nothing is moved, and anything that runs `claude` without Billy — a script, an IDE extension, a `claude -p` in a pipeline — keeps using it.
+
+**Move it** renames the directory to `~/.claude-<name>` so every account follows the same convention. Two consequences worth knowing before you answer:
+
+- Bare `claude` will create a new, empty `~/.claude` and ask you to log in. Billy becomes the only way into that account.
+- Credentials are stored in the system keychain **per config directory**, so moving the directory usually means logging in once more.
+
+Billy refuses the move if the target already exists, and afterwards it checks `~/.agents/plugins/` for symlinks that pointed into the old location — a marketplace checkout under `~/.claude` is a common one — and names any that broke instead of silently dropping them.
+
+**Leave it alone** skips the whole thing; new accounts start from scratch.
+
+You can still set this up by hand: add the account to `~/.config/billy/accounts.json` before the first launch, with `configDir` pointing wherever you want.
