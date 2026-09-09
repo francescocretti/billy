@@ -65,13 +65,33 @@ On subsequent runs, your saved accounts appear in the list:
 Billy — Claude Code Switch
 
 ◆ Which account do you want to use?
-│ ● work        ~/.claude-work
+│ ● work        ~/.claude-work · shared
 │ ○ personal    ~/.claude-personal
 │ ○ + Add account
+│ ○ ⚙ Shared resources
+│ ○ ⚙ Delete account
+│ ○ ⚙ Language
 └
 ```
 
-Select one and Claude Code starts immediately, no login required.
+Select an account and Claude Code starts immediately, no login required. The `⚙` entries all loop back to this list once you're done, so you can change a setting and launch in the same run.
+
+### Deleting an account
+
+**⚙ Delete account** asks two separate questions, because they are two separate decisions:
+
+1. Remove the account from Billy's list — this only rewrites `accounts.json`.
+2. Delete its config directory — this erases the account's credentials, history and settings.
+
+The second defaults to **no**, so answering through with Enter leaves the directory untouched and you can re-add the account later without logging in again. Billy refuses to delete any directory outside your home, and warns you explicitly if the directory happens to be `~/.claude`, Claude Code's own default config dir.
+
+### Language
+
+Billy speaks English and Italian. Pick one from **⚙ Language**; the choice is saved in `~/.config/billy/settings.json` and applies from the next screen onwards.
+
+The language is never guessed from your system locale, so Billy stays in the language you chose on every machine you carry your dotfiles to. English is the default until you pick otherwise.
+
+Adding a language means adding one entry to `MESSAGES` and one to `LANGUAGES` in `i18n.mjs`. Any key you leave out falls back to English rather than showing a raw key.
 
 ## Shared resources (skills, commands, agents, CLAUDE.md)
 
@@ -141,10 +161,9 @@ Open two terminal windows and run `billy` in each. Select a different account in
 | Path | Contents |
 |---|---|
 | `~/.config/billy/accounts.json` | Account list (name, config dir path, shared-resources flag) |
+| `~/.config/billy/settings.json` | Billy's own settings — currently just the UI language |
 | `~/.agents/plugins/*` | Plugins loaded into every account via `--plugin-dir` |
 | `~/.claude-<name>/` | Claude Code config, credentials, and settings for that account |
-
-To remove an account, delete its entry from `accounts.json` and optionally remove its config directory.
 
 ## Migrating from the default Claude Code setup
 
