@@ -79,6 +79,7 @@ const MESSAGES = {
     'sync.skipped': 'Skipped (real files, not symlinks): {list}',
     'mcp.step': 'Shared MCP servers loaded from {file}',
     'plugins.step': 'Shared plugins: {list}',
+    'plugins.installed': 'Already installed in this account, not injected: {list}',
 
     'launch': 'Launching Claude Code as "{name}"...',
     'launch.error': 'Error: could not start claude. {message}',
@@ -143,6 +144,7 @@ const MESSAGES = {
     'sync.skipped': 'Saltati (file reali, non symlink): {list}',
     'mcp.step': 'Server MCP condivisi caricati da {file}',
     'plugins.step': 'Plugin condivisi: {list}',
+    'plugins.installed': 'Già installati in questo account, non iniettati: {list}',
 
     'launch': 'Avvio Claude Code come "{name}"...',
     'launch.error': 'Errore: impossibile avviare claude. {message}',

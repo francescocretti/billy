@@ -2,9 +2,15 @@
 import { intro, outro, note, select, text, confirm, log, isCancel, cancel } from '@clack/prompts';
 import { spawn } from 'child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'fs';
-import { basename, join, sep } from 'path';
+import { join, sep } from 'path';
 import { homedir } from 'os';
-import { AGENTS_DIR, syncSharedResources, sharedMcpConfig, sharedPlugins } from './sync.mjs';
+import {
+  AGENTS_DIR,
+  installedPluginNames,
+  syncSharedResources,
+  sharedMcpConfig,
+  sharedPlugins,
+} from './sync.mjs';
 import { LANGUAGES, SETTINGS_FILE, getLanguage, setLanguage, t } from './i18n.mjs';
 
 const CONFIG_DIR = join(homedir(), '.config', 'billy');
@@ -173,7 +179,7 @@ function showInfo(accounts) {
     [t('info.accountsFile'), ACCOUNTS_FILE],
     [t('info.settingsFile'), SETTINGS_FILE],
     [t('info.agentsDir'), existsSync(AGENTS_DIR) ? AGENTS_DIR : `${AGENTS_DIR} (${t('info.missing')})`],
-    [t('info.plugins'), plugins.length ? plugins.map(p => basename(p)).join(', ') : t('info.none')],
+    [t('info.plugins'), plugins.length ? plugins.map(p => p.name).join(', ') : t('info.none')],
     [t('info.mcp'), mcpConfig ?? t('info.none')],
   ];
 
@@ -279,13 +285,22 @@ async function main() {
   // Plugins are loaded for every account, whether or not it opted into the
   // shared resources: --plugin-dir is session-only and writes no state, and a
   // plugin like Warp's is what makes the terminal recognise the session as
-  // Claude Code at all.
+  // Claude Code at all. One exception: a plugin this account already installed
+  // is left to its own copy, or Claude Code would load both and run every hook
+  // twice — for Warp that means duplicate notifications on every event.
+  const installed = installedPluginNames(account.configDir);
   const plugins = sharedPlugins();
-  for (const plugin of plugins) {
-    claudeArgs.push('--plugin-dir', plugin);
+  const injected = plugins.filter(p => !installed.has(p.name));
+  const alreadyInstalled = plugins.filter(p => installed.has(p.name));
+
+  for (const plugin of injected) {
+    claudeArgs.push('--plugin-dir', plugin.path);
   }
-  if (plugins.length) {
-    log.step(t('plugins.step', { list: plugins.map(p => basename(p)).join(', ') }));
+  if (injected.length) {
+    log.step(t('plugins.step', { list: injected.map(p => p.name).join(', ') }));
+  }
+  if (alreadyInstalled.length) {
+    log.step(t('plugins.installed', { list: alreadyInstalled.map(p => p.name).join(', ') }));
   }
 
   outro(t('launch', { name: account.name }));

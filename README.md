@@ -177,7 +177,8 @@ ln -s ~/.claude/plugins/marketplaces/claude-code-warp/plugins/warp ~/.agents/plu
 
 Notes:
 
-- The plugin appears as `<name>@inline` instead of `<name>@<marketplace>`; check with `claude plugin list`.
+- A plugin the account **already installed itself** is skipped rather than injected. Loading both copies would register every hook twice — for Warp, that means duplicate notifications on every event. Installed-but-disabled counts as installed: the account disabled it on purpose.
+- The injected plugin appears as `<name>@inline` instead of `<name>@<marketplace>`; check with `claude plugin list`.
 - Link the marketplace checkout, not `plugins/cache/<marketplace>/<name>/<version>/` — the cache path changes on every version bump.
 - The Warp plugin needs `jq` on your `PATH`.
 
