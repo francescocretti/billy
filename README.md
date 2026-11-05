@@ -4,6 +4,8 @@
 
 Billy is a minimal CLI tool for managing multiple [Claude Code](https://claude.ai/code) accounts. It lets you pick which account to use at launch, keeping each account's credentials and settings fully isolated.
 
+![Billy: picking an account, opening Settings, seeing where everything lives, and launching Claude Code](docs/media/billy.gif)
+
 ## How it works
 
 Each account gets its own configuration directory (`~/.claude-<name>`), passed to Claude Code via the `CLAUDE_CONFIG_DIR` environment variable. The first time you launch a new account, Claude Code will walk you through login. After that, credentials are persisted in that directory and login is never asked again. An account adopted from an existing `~/.claude` keeps that directory and its login, so it never asks.
@@ -54,19 +56,7 @@ What you see depends on whether you already use Claude Code.
 
 **If you already have a `~/.claude`** — the common case, since that setup is usually why you want a switcher — Billy finds it, shows what it found, and asks the one thing it cannot know:
 
-```
-◇  Existing Claude Code setup found ──────────────────╮
-│                                                     │
-│  Directory    ~/.claude                             │
-│  Logged in as you@example.com                       │
-│  Projects     21                                    │
-│                                                     │
-├─────────────────────────────────────────────────────╯
-
-◆ What should Billy call this account?
-│ personal
-└
-```
+![First run: Billy finds an existing ~/.claude, asks what to call it, and lists it as an account](docs/media/first-run.gif)
 
 Nothing is moved and nothing is lost: `~/.claude` stays where it is, keeps its history and credentials, and plain `claude` still reaches it. Billy just records it as an account so it shows up in the list. See [Migrating from the default Claude Code setup](#migrating-from-the-default-claude-code-setup) for the details.
 
@@ -198,14 +188,7 @@ Plugins are installed per config dir (`~/.claude/plugins/`), so a plugin install
 
 Billy fixes this with shared plugins it manages itself. Go to **⚙ Settings → Shared plugins**:
 
-```
-◆ Shared plugins — loaded into every account
-│ ● sef                          v3.1.0 · Lestat86/software-engineering-foundation
-│ ○ warp                         v2.4.0 · warpdotdev/claude-code-warp
-│ ○ + Add shared plugin
-│ ○ ← Back
-└
-```
+![Sharing a plugin that one account installed on its own: Billy clones its repository, links it for every account, and removes the private copy](docs/media/plugins.gif)
 
 **Adding** asks where the plugin comes from:
 
@@ -243,21 +226,7 @@ Open two terminal windows and run `billy` in each. Select a different account in
 
 ## Migrating from the default Claude Code setup
 
-If you used Claude Code before installing Billy, your history, projects, settings and credentials live in `~/.claude`. The first time you run Billy with no accounts yet, it finds that setup, shows you what it found, and asks the one thing it cannot know — what to call it:
-
-```
-◇  Existing Claude Code setup found ──────────────────╮
-│                                                     │
-│  Directory    ~/.claude                             │
-│  Logged in as you@example.com                       │
-│  Projects     21                                    │
-│                                                     │
-├─────────────────────────────────────────────────────╯
-
-◆ What should Billy call this account?
-│ personal
-└
-```
+If you used Claude Code before installing Billy, your history, projects, settings and credentials live in `~/.claude`. The first time you run Billy with no accounts yet, it finds that setup, shows you what it found, and asks the one thing it cannot know — what to call it (see [First run](#first-run)).
 
 Then the usual account list takes over, now with that account in it.
 
@@ -266,3 +235,16 @@ There is nothing else to decide, because adopting the directory costs nothing an
 Cancelling the name prompt adopts nothing, and the offer comes back on the next launch since Billy still has no accounts.
 
 If you would rather set this up by hand, add the account to `~/.billy/accounts.json` before the first launch, with `configDir` pointing wherever you want.
+
+## Regenerating the GIFs
+
+The recordings in `docs/media/` are scripted with [VHS](https://github.com/charmbracelet/vhs): one `.tape` per GIF in `docs/demo/`. After changing a screen, re-record them with
+
+```bash
+brew install vhs
+bash docs/demo/record.sh           # all of them
+bash docs/demo/record.sh plugins   # just docs/demo/plugins.tape
+```
+
+The script runs Billy against a throwaway home with demo accounts and a stubbed `claude`, so your real setup never ends up in a recording — and is never touched. It clones the demo's shared plugins from GitHub, so it needs network access.
+
