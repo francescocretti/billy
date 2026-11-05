@@ -4,16 +4,19 @@
 
 Billy is a minimal CLI tool for managing multiple [Claude Code](https://claude.ai/code) accounts. It lets you pick which account to use at launch, keeping each account's credentials and settings fully isolated.
 
+![Billy: picking an account, opening Settings, seeing where everything lives, and launching Claude Code](docs/media/billy.gif)
+
 ## How it works
 
 Each account gets its own configuration directory (`~/.claude-<name>`), passed to Claude Code via the `CLAUDE_CONFIG_DIR` environment variable. The first time you launch a new account, Claude Code will walk you through login. After that, credentials are persisted in that directory and login is never asked again. An account adopted from an existing `~/.claude` keeps that directory and its login, so it never asks.
 
-Account profiles are stored in `~/.config/billy/accounts.json`.
+Account profiles are stored in `~/.billy/accounts.json`. Everything Billy writes and manages lives in `~/.billy/`; content you author — skills, commands, agents, `CLAUDE.md`, MCP servers — stays in `~/.agents/`, which Billy only reads. (Older versions used `~/.config/billy/`: Billy moves it over on first launch.) To keep Billy's folder elsewhere, set the `BILLY_DIR` environment variable — Billy then skips that migration.
 
 ## Requirements
 
 - [Node.js](https://nodejs.org) v18+
 - [Claude Code](https://claude.ai/code) installed and available as `claude` in your PATH
+- `git`, to add and update [shared plugins](#shared-plugins-and-terminal-integration)
 
 ## Installation
 
@@ -53,19 +56,7 @@ What you see depends on whether you already use Claude Code.
 
 **If you already have a `~/.claude`** — the common case, since that setup is usually why you want a switcher — Billy finds it, shows what it found, and asks the one thing it cannot know:
 
-```
-◇  Existing Claude Code setup found ──────────────────╮
-│                                                     │
-│  Directory    /Users/you/.claude                    │
-│  Logged in as you@example.com                       │
-│  Projects     21                                    │
-│                                                     │
-├─────────────────────────────────────────────────────╯
-
-◆ What should Billy call this account?
-│ personal
-└
-```
+![First run: Billy finds an existing ~/.claude, asks what to call it, and lists it as an account](docs/media/first-run.gif)
 
 Nothing is moved and nothing is lost: `~/.claude` stays where it is, keeps its history and credentials, and plain `claude` still reaches it. Billy just records it as an account so it shows up in the list. See [Migrating from the default Claude Code setup](#migrating-from-the-default-claude-code-setup) for the details.
 
@@ -105,6 +96,7 @@ Everything that isn't "launch an account" lives behind **⚙ Settings**, so the 
 ◆ Settings
 │ ● Shared resources     on for 1 of 4 accounts
 │ ○ Delete account       the profile and, if you want, its config dir
+│ ○ Shared plugins       warp, sef
 │ ○ Language             English
 │ ○ Where everything lives
 │ ○ ← Back
@@ -116,16 +108,17 @@ Everything that isn't "launch an account" lives behind **⚙ Settings**, so the 
 **Where everything lives** answers the question a tool like this keeps raising, since it juggles directories across two config trees:
 
 ```
-◇  Where everything lives ────────────────────────────────────────╮
-│                                                                 │
-│  Accounts             4                                         │
-│  Account list         /Users/you/.config/billy/accounts.json    │
-│  Billy settings       /Users/you/.config/billy/settings.json    │
-│  Shared resources     /Users/you/.agents                        │
-│  Shared plugins       warp                                      │
-│  Shared MCP servers   none                                      │
-│                                                                 │
-├─────────────────────────────────────────────────────────────────╯
+◇  Where everything lives ───────────────────────────╮
+│                                                    │
+│  Billy folder         ~/.billy                     │
+│  Accounts             4                            │
+│  Account list         ~/.billy/accounts.json       │
+│  Billy settings       ~/.billy/settings.json       │
+│  Shared resources     ~/.agents                    │
+│  Shared plugins       sef, warp (~/.billy/plugins) │
+│  Shared MCP servers   none                         │
+│                                                    │
+├────────────────────────────────────────────────────╯
 ```
 
 ### Deleting an account
@@ -139,7 +132,7 @@ The second defaults to **no**, so answering through with Enter leaves the direct
 
 ### Language
 
-Billy speaks English and Italian. Pick one from **Language**; the choice is saved in `~/.config/billy/settings.json` and applies from the next screen onwards.
+Billy speaks English and Italian. Pick one from **Language**; the choice is saved in `~/.billy/settings.json` and applies from the next screen onwards.
 
 The language is never guessed from your system locale, so Billy stays in the language you chose on every machine you carry your dotfiles to. English is the default until you pick otherwise.
 
@@ -189,24 +182,30 @@ For every account with `sharedResources` enabled, Billy launches Claude Code wit
 - OAuth-authenticated remote servers still require logging in once per account: tokens are stored per config dir and can't be shared.
 - Project-scoped servers (`.mcp.json` in a repo) already work across accounts with no help from Billy.
 
-### Shared plugins (and terminal integration)
+## Shared plugins (and terminal integration)
 
 Plugins are installed per config dir (`~/.claude/plugins/`), so a plugin installed on your main account is invisible to every other identity. That's what breaks terminal integrations: Warp, for instance, only recognises a session as Claude Code because the `warp` plugin emits OSC notifications from its hooks. Launch another account and the plugin isn't there, so the terminal sees a plain process and none of its special features light up.
 
-Billy fixes this with Claude Code's `--plugin-dir` flag: every directory in `~/.agents/plugins/` that contains a `.claude-plugin/plugin.json` is loaded at launch, for **every** account (unlike the resources above, this isn't gated on `sharedResources` — `--plugin-dir` is session-only and writes no state anywhere).
+Billy fixes this with shared plugins it manages itself. Go to **⚙ Settings → Shared plugins**:
 
-Symlinks are fine, so you can point at a marketplace checkout and keep getting updates:
+![Sharing a plugin that one account installed on its own: Billy clones its repository, links it for every account, and removes the private copy](docs/media/plugins.gif)
 
-```bash
-mkdir -p ~/.agents/plugins
-ln -s ~/.claude/plugins/marketplaces/claude-code-warp/plugins/warp ~/.agents/plugins/warp
-```
+**Adding** asks where the plugin comes from:
+
+- **From one of your accounts** — lists the plugins your accounts installed on their own. Billy looks up the marketplace the plugin came from and clones *that* repository; it never links into an account's config dir, so uninstalling the plugin there can't take it away from the others.
+- **From a git repository** — `owner/repo` for GitHub, or any git URL. If the repository is a marketplace offering several plugins, Billy asks which one.
+
+The clone goes in `~/.billy/repos/`, and a link to the plugin's folder in `~/.billy/plugins/`. If some account also has the plugin installed on its own, Billy offers to uninstall it there (`claude plugin uninstall`, user scope only), so every account runs the same copy.
+
+**Opening a plugin** offers **Update** (`git pull` in its clone — nothing updates on its own) and **Remove** (drops the link, and the clone once nothing else points into it).
+
+At launch, every entry in `~/.billy/plugins/` with a `.claude-plugin/plugin.json` is loaded with Claude Code's `--plugin-dir` flag, for **every** account (unlike the resources above, this isn't gated on `sharedResources` — `--plugin-dir` is session-only and writes no state anywhere).
 
 Notes:
 
 - A plugin the account **already installed itself** is skipped rather than injected. Loading both copies would register every hook twice — for Warp, that means duplicate notifications on every event. Installed-but-disabled counts as installed: the account disabled it on purpose.
 - The injected plugin appears as `<name>@inline` instead of `<name>@<marketplace>`; check with `claude plugin list`.
-- Link the marketplace checkout, not `plugins/cache/<marketplace>/<name>/<version>/` — the cache path changes on every version bump.
+- Plugins in the old `~/.agents/plugins/` are no longer loaded; the Shared plugins screen points them out so you can add them again.
 - The Warp plugin needs `jq` on your `PATH`.
 
 ## Running two accounts simultaneously
@@ -217,30 +216,17 @@ Open two terminal windows and run `billy` in each. Select a different account in
 
 | Path | Contents |
 |---|---|
-| `~/.config/billy/accounts.json` | Account list (name, config dir path, shared-resources flag) |
-| `~/.config/billy/settings.json` | Billy's own settings — currently just the UI language |
+| `~/.billy/accounts.json` | Account list (name, config dir path, shared-resources flag) |
+| `~/.billy/settings.json` | Billy's own settings — currently just the UI language |
+| `~/.billy/plugins/*` | Shared plugins, loaded into every account via `--plugin-dir` |
+| `~/.billy/repos/*` | Git clones the shared plugins come from, managed by Billy |
 | `~/.agents/skills,commands,agents,CLAUDE.md` | Shared resources, symlinked into opted-in accounts |
 | `~/.agents/mcp.json` | Shared MCP servers, passed with `--mcp-config` |
-| `~/.agents/plugins/*` | Plugins loaded into every account via `--plugin-dir` |
 | `~/.claude-<name>/` | Claude Code config, credentials, and settings for that account — `~/.claude` for an adopted one |
 
 ## Migrating from the default Claude Code setup
 
-If you used Claude Code before installing Billy, your history, projects, settings and credentials live in `~/.claude`. The first time you run Billy with no accounts yet, it finds that setup, shows you what it found, and asks the one thing it cannot know — what to call it:
-
-```
-◇  Existing Claude Code setup found ──────────────────╮
-│                                                     │
-│  Directory    /Users/you/.claude                    │
-│  Logged in as you@example.com                       │
-│  Projects     21                                    │
-│                                                     │
-├─────────────────────────────────────────────────────╯
-
-◆ What should Billy call this account?
-│ personal
-└
-```
+If you used Claude Code before installing Billy, your history, projects, settings and credentials live in `~/.claude`. The first time you run Billy with no accounts yet, it finds that setup, shows you what it found, and asks the one thing it cannot know — what to call it (see [First run](#first-run)).
 
 Then the usual account list takes over, now with that account in it.
 
@@ -248,4 +234,38 @@ There is nothing else to decide, because adopting the directory costs nothing an
 
 Cancelling the name prompt adopts nothing, and the offer comes back on the next launch since Billy still has no accounts.
 
-If you would rather set this up by hand, add the account to `~/.config/billy/accounts.json` before the first launch, with `configDir` pointing wherever you want.
+If you would rather set this up by hand, add the account to `~/.billy/accounts.json` before the first launch, with `configDir` pointing wherever you want.
+
+## Regenerating the GIFs
+
+The recordings in `docs/media/` are scripted with [VHS](https://github.com/charmbracelet/vhs): one `.tape` per GIF in `docs/demo/`. After changing a screen, re-record them with
+
+```bash
+brew install vhs
+bash docs/demo/record.sh           # all of them
+bash docs/demo/record.sh plugins   # just docs/demo/plugins.tape
+```
+
+The script runs Billy against a throwaway home with demo accounts and a stubbed `claude`, so your real setup never ends up in a recording — and is never touched. It clones the demo's shared plugins from GitHub, so it needs network access.
+
+## Releasing
+
+Billy follows [Semantic Versioning](https://semver.org/) and records every release in [CHANGELOG.md](CHANGELOG.md). Commits follow [Conventional Commits](https://www.conventionalcommits.org/): `feat:` means a minor bump, `fix:` a patch, and `BREAKING CHANGE:` a major.
+
+1. While working, add each user-visible change under **Unreleased** in `CHANGELOG.md`.
+2. To release, rename **Unreleased** to the new version with today's date, add an empty **Unreleased** above it, and update the comparison links at the bottom.
+3. Bump the version and commit both files:
+
+   ```bash
+   npm version 1.2.0 --no-git-tag-version
+   git commit -am "chore(release): 1.2.0"
+   ```
+
+4. Once that commit is on `main`, tag it and publish the release:
+
+   ```bash
+   git tag -a v1.2.0 -m "v1.2.0"
+   git push origin v1.2.0
+   gh release create v1.2.0 --title v1.2.0 --notes "<the version's section from CHANGELOG.md>"
+   ```
+

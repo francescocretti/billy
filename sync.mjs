@@ -9,7 +9,6 @@
 import {
   existsSync,
   lstatSync,
-  readFileSync,
   mkdirSync,
   readdirSync,
   readlinkSync,
@@ -149,55 +148,4 @@ export function syncSharedResources(configDir) {
   }
 
   return result;
-}
-
-/**
- * Absolute paths of the plugins shared across accounts, one per directory in
- * ~/.agents/plugins/ (symlinks to a marketplace checkout are fine). They are
- * handed to Claude Code via --plugin-dir at launch rather than installed into
- * each account: session-only, so no plugin registry is duplicated per identity.
- * Never throws.
- */
-export function sharedPlugins() {
-  const dir = join(AGENTS_DIR, 'plugins');
-  try {
-    return readdirSync(dir)
-      .filter(entry => !entry.startsWith('.'))
-      .map(entry => {
-        const path = join(dir, entry);
-        const manifest = join(path, '.claude-plugin', 'plugin.json');
-        if (!existsSync(manifest)) return null;
-        // Claude Code identifies a plugin by its manifest name, not by the
-        // directory it sits in — and that name is what we match against the
-        // account's own installed plugins.
-        let name = entry;
-        try {
-          name = JSON.parse(readFileSync(manifest, 'utf8')).name || entry;
-        } catch {
-          // unreadable manifest: fall back to the directory name
-        }
-        return { name, path };
-      })
-      .filter(Boolean);
-  } catch {
-    return [];
-  }
-}
-
-/**
- * Names of the plugins an account has installed in its own config dir.
- *
- * A plugin that is already installed must not also be injected with
- * --plugin-dir: Claude Code would load both copies and fire every hook twice.
- * Installed-but-disabled counts as installed — the account disabled it on
- * purpose, and injecting it would quietly override that decision.
- */
-export function installedPluginNames(configDir) {
-  try {
-    const file = join(configDir, 'plugins', 'installed_plugins.json');
-    const { plugins } = JSON.parse(readFileSync(file, 'utf8'));
-    return new Set(Object.keys(plugins ?? {}).map(id => id.split('@')[0]));
-  } catch {
-    return new Set();
-  }
 }
