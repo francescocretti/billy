@@ -60,6 +60,13 @@ function saveAccounts(accounts) {
   writeFileSync(ACCOUNTS_FILE, JSON.stringify(accounts, null, 2));
 }
 
+// A path for display, with the home directory shortened to ~.
+function tilde(path) {
+  const home = homedir();
+  if (path === home) return '~';
+  return path.startsWith(home + sep) ? `~${path.slice(home.length)}` : path;
+}
+
 function bail(message) {
   cancel(message ?? t('cancelled'));
   process.exit(0);
@@ -142,7 +149,7 @@ async function editSharedResources(accounts) {
   } else {
     // Turning it off only stops future syncs — links already in the config dir
     // are left alone, so say so instead of implying a cleanup happened.
-    log.success(t('shared.disabled', { name: account.name, dir: account.configDir }));
+    log.success(t('shared.disabled', { name: account.name, dir: tilde(account.configDir) }));
   }
 }
 
@@ -153,7 +160,7 @@ async function editSharedResources(accounts) {
 async function deleteAccount(accounts) {
   const selected = await select({
     message: t('delete.which'),
-    options: accounts.map(a => ({ value: a.id, label: a.name, hint: a.configDir })),
+    options: accounts.map(a => ({ value: a.id, label: a.name, hint: tilde(a.configDir) })),
   });
   if (isCancel(selected)) return;
 
@@ -248,7 +255,7 @@ async function adoptExistingSetup(accounts) {
   const found = describeDefaultSetup();
   if (!found) return;
 
-  const rows = [[t('adopt.dir'), CLAUDE_DEFAULT_DIR]];
+  const rows = [[t('adopt.dir'), tilde(CLAUDE_DEFAULT_DIR)]];
   if (found.email) rows.push([t('adopt.account'), found.email]);
   rows.push([t('adopt.projects'), String(found.projects)]);
   note(alignedRows(rows), t('adopt.title'));
@@ -273,7 +280,7 @@ async function adoptExistingSetup(accounts) {
   });
   saveAccounts(accounts);
 
-  log.success(t('adopt.adopted', { name: name.trim(), dir: CLAUDE_DEFAULT_DIR }));
+  log.success(t('adopt.adopted', { name: name.trim(), dir: tilde(CLAUDE_DEFAULT_DIR) }));
 }
 
 // Billy juggles half a dozen directories across two config trees, so the one
@@ -283,16 +290,19 @@ function showInfo(accounts) {
   const mcpConfig = sharedMcpConfig();
 
   const rows = [
-    [t('info.billyDir'), BILLY_DIR],
+    [t('info.billyDir'), tilde(BILLY_DIR)],
     [t('info.accounts'), String(accounts.length)],
-    [t('info.accountsFile'), ACCOUNTS_FILE],
-    [t('info.settingsFile'), SETTINGS_FILE],
-    [t('info.agentsDir'), existsSync(AGENTS_DIR) ? AGENTS_DIR : `${AGENTS_DIR} (${t('info.missing')})`],
+    [t('info.accountsFile'), tilde(ACCOUNTS_FILE)],
+    [t('info.settingsFile'), tilde(SETTINGS_FILE)],
+    [
+      t('info.agentsDir'),
+      existsSync(AGENTS_DIR) ? tilde(AGENTS_DIR) : `${tilde(AGENTS_DIR)} (${t('info.missing')})`,
+    ],
     [
       t('info.plugins'),
-      plugins.length ? `${plugins.map(p => p.name).join(', ')} (${PLUGINS_DIR})` : t('info.none'),
+      plugins.length ? `${plugins.map(p => p.name).join(', ')} (${tilde(PLUGINS_DIR)})` : t('info.none'),
     ],
-    [t('info.mcp'), mcpConfig ?? t('info.none')],
+    [t('info.mcp'), mcpConfig ? tilde(mcpConfig) : t('info.none')],
   ];
 
   note(alignedRows(rows), t('settings.info'));
@@ -469,7 +479,7 @@ async function sharedPluginActions(plugin) {
 async function pluginsMenu(accounts) {
   const legacy = legacyAgentsPlugins();
   if (legacy.length) {
-    log.warn(t('plugins.legacy', { dir: join(AGENTS_DIR, 'plugins'), list: legacy.join(', ') }));
+    log.warn(t('plugins.legacy', { dir: tilde(join(AGENTS_DIR, 'plugins')), list: legacy.join(', ') }));
   }
 
   for (;;) {
@@ -480,7 +490,7 @@ async function pluginsMenu(accounts) {
         ...plugins.map(p => ({
           value: p.path,
           label: p.name,
-          hint: [p.version && `v${p.version}`, pluginOrigin(p) ?? p.path].filter(Boolean).join(' · '),
+          hint: [p.version && `v${p.version}`, pluginOrigin(p) ?? tilde(p.path)].filter(Boolean).join(' · '),
         })),
         { value: '__add__', label: t('plugins.add') },
         { value: '__back__', label: t('settings.back') },
@@ -547,7 +557,7 @@ async function pickAccount(accounts) {
       ...accounts.map(a => ({
         value: a.id,
         label: a.name,
-        hint: a.sharedResources ? `${a.configDir} · ${t('menu.hint.shared')}` : a.configDir,
+        hint: a.sharedResources ? `${tilde(a.configDir)} · ${t('menu.hint.shared')}` : tilde(a.configDir),
       })),
       { value: '__new__', label: t('menu.new') },
       { value: '__settings__', label: t('menu.settings') },
@@ -593,7 +603,7 @@ async function main() {
     const mcpConfig = sharedMcpConfig();
     if (mcpConfig) {
       claudeArgs.push('--mcp-config', mcpConfig);
-      log.step(t('mcp.step', { file: mcpConfig }));
+      log.step(t('mcp.step', { file: tilde(mcpConfig) }));
     }
   }
 

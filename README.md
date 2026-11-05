@@ -57,7 +57,7 @@ What you see depends on whether you already use Claude Code.
 ```
 ◇  Existing Claude Code setup found ──────────────────╮
 │                                                     │
-│  Directory    /Users/you/.claude                    │
+│  Directory    ~/.claude                             │
 │  Logged in as you@example.com                       │
 │  Projects     21                                    │
 │                                                     │
@@ -118,17 +118,17 @@ Everything that isn't "launch an account" lives behind **⚙ Settings**, so the 
 **Where everything lives** answers the question a tool like this keeps raising, since it juggles directories across two config trees:
 
 ```
-◇  Where everything lives ─────────────────────────────────────────╮
-│                                                                  │
-│  Billy folder         /Users/you/.billy                          │
-│  Accounts             4                                          │
-│  Account list         /Users/you/.billy/accounts.json            │
-│  Billy settings       /Users/you/.billy/settings.json            │
-│  Shared resources     /Users/you/.agents                         │
-│  Shared plugins       sef, warp (/Users/you/.billy/plugins)      │
-│  Shared MCP servers   none                                       │
-│                                                                  │
-├──────────────────────────────────────────────────────────────────╯
+◇  Where everything lives ───────────────────────────╮
+│                                                    │
+│  Billy folder         ~/.billy                     │
+│  Accounts             4                            │
+│  Account list         ~/.billy/accounts.json       │
+│  Billy settings       ~/.billy/settings.json       │
+│  Shared resources     ~/.agents                    │
+│  Shared plugins       sef, warp (~/.billy/plugins) │
+│  Shared MCP servers   none                         │
+│                                                    │
+├────────────────────────────────────────────────────╯
 ```
 
 ### Deleting an account
@@ -248,7 +248,7 @@ If you used Claude Code before installing Billy, your history, projects, setting
 ```
 ◇  Existing Claude Code setup found ──────────────────╮
 │                                                     │
-│  Directory    /Users/you/.claude                    │
+│  Directory    ~/.claude                             │
 │  Logged in as you@example.com                       │
 │  Projects     21                                    │
 │                                                     │
