@@ -19,10 +19,9 @@ import {
   sharedMcpConfig,
   sharedPlugins,
 } from './sync.mjs';
+import { ACCOUNTS_FILE, BILLY_DIR } from './paths.mjs';
 import { LANGUAGES, SETTINGS_FILE, getLanguage, setLanguage, t } from './i18n.mjs';
 
-const CONFIG_DIR = join(homedir(), '.config', 'billy');
-const ACCOUNTS_FILE = join(CONFIG_DIR, 'accounts.json');
 const CLAUDE_DEFAULT_DIR = join(homedir(), '.claude');
 
 function loadAccounts() {
@@ -36,7 +35,7 @@ function loadAccounts() {
 }
 
 function saveAccounts(accounts) {
-  mkdirSync(CONFIG_DIR, { recursive: true });
+  mkdirSync(BILLY_DIR, { recursive: true });
   writeFileSync(ACCOUNTS_FILE, JSON.stringify(accounts, null, 2));
 }
 
@@ -263,6 +262,7 @@ function showInfo(accounts) {
   const mcpConfig = sharedMcpConfig();
 
   const rows = [
+    [t('info.billyDir'), BILLY_DIR],
     [t('info.accounts'), String(accounts.length)],
     [t('info.accountsFile'), ACCOUNTS_FILE],
     [t('info.settingsFile'), SETTINGS_FILE],

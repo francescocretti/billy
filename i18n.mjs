@@ -1,7 +1,7 @@
 // UI strings for Billy, in every supported language.
 //
 // The active language is a deliberate choice, saved in
-// ~/.config/billy/settings.json — it is never guessed from the system locale,
+// ~/.billy/settings.json — it is never guessed from the system locale,
 // so Billy speaks the same language on every machine you carry your dotfiles
 // to. English is the default until you pick otherwise (⚙ Language in the menu).
 //
@@ -9,10 +9,10 @@
 // any key you leave out falls back to English rather than showing a raw key.
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
-import { dirname, join } from 'path';
-import { homedir } from 'os';
+import { dirname } from 'path';
+import { SETTINGS_FILE } from './paths.mjs';
 
-export const SETTINGS_FILE = join(homedir(), '.config', 'billy', 'settings.json');
+export { SETTINGS_FILE };
 
 export const LANGUAGES = [
   { value: 'en', label: 'English' },
@@ -69,6 +69,7 @@ const MESSAGES = {
     'settings.info': 'Where everything lives',
     'settings.back': '← Back',
 
+    'info.billyDir': 'Billy folder',
     'info.accounts': 'Accounts',
     'info.accountsFile': 'Account list',
     'info.settingsFile': 'Billy settings',
@@ -141,6 +142,7 @@ const MESSAGES = {
     'settings.info': 'Dove sta ogni cosa',
     'settings.back': '← Indietro',
 
+    'info.billyDir': 'Cartella Billy',
     'info.accounts': 'Account',
     'info.accountsFile': 'Lista account',
     'info.settingsFile': 'Impostazioni Billy',

@@ -8,7 +8,7 @@ Billy is a minimal CLI tool for managing multiple [Claude Code](https://claude.a
 
 Each account gets its own configuration directory (`~/.claude-<name>`), passed to Claude Code via the `CLAUDE_CONFIG_DIR` environment variable. The first time you launch a new account, Claude Code will walk you through login. After that, credentials are persisted in that directory and login is never asked again. An account adopted from an existing `~/.claude` keeps that directory and its login, so it never asks.
 
-Account profiles are stored in `~/.config/billy/accounts.json`.
+Account profiles are stored in `~/.billy/accounts.json`. Everything Billy writes and manages lives in `~/.billy/`; content you author — skills, commands, agents, `CLAUDE.md`, MCP servers — stays in `~/.agents/`, which Billy only reads. (Older versions used `~/.config/billy/`: Billy moves it over on first launch.) To keep Billy's folder elsewhere, set the `BILLY_DIR` environment variable — Billy then skips that migration.
 
 ## Requirements
 
@@ -118,9 +118,10 @@ Everything that isn't "launch an account" lives behind **⚙ Settings**, so the 
 ```
 ◇  Where everything lives ────────────────────────────────────────╮
 │                                                                 │
+│  Billy folder         /Users/you/.billy                         │
 │  Accounts             4                                         │
-│  Account list         /Users/you/.config/billy/accounts.json    │
-│  Billy settings       /Users/you/.config/billy/settings.json    │
+│  Account list         /Users/you/.billy/accounts.json           │
+│  Billy settings       /Users/you/.billy/settings.json           │
 │  Shared resources     /Users/you/.agents                        │
 │  Shared plugins       warp                                      │
 │  Shared MCP servers   none                                      │
@@ -139,7 +140,7 @@ The second defaults to **no**, so answering through with Enter leaves the direct
 
 ### Language
 
-Billy speaks English and Italian. Pick one from **Language**; the choice is saved in `~/.config/billy/settings.json` and applies from the next screen onwards.
+Billy speaks English and Italian. Pick one from **Language**; the choice is saved in `~/.billy/settings.json` and applies from the next screen onwards.
 
 The language is never guessed from your system locale, so Billy stays in the language you chose on every machine you carry your dotfiles to. English is the default until you pick otherwise.
 
@@ -217,8 +218,8 @@ Open two terminal windows and run `billy` in each. Select a different account in
 
 | Path | Contents |
 |---|---|
-| `~/.config/billy/accounts.json` | Account list (name, config dir path, shared-resources flag) |
-| `~/.config/billy/settings.json` | Billy's own settings — currently just the UI language |
+| `~/.billy/accounts.json` | Account list (name, config dir path, shared-resources flag) |
+| `~/.billy/settings.json` | Billy's own settings — currently just the UI language |
 | `~/.agents/skills,commands,agents,CLAUDE.md` | Shared resources, symlinked into opted-in accounts |
 | `~/.agents/mcp.json` | Shared MCP servers, passed with `--mcp-config` |
 | `~/.agents/plugins/*` | Plugins loaded into every account via `--plugin-dir` |
@@ -248,4 +249,4 @@ There is nothing else to decide, because adopting the directory costs nothing an
 
 Cancelling the name prompt adopts nothing, and the offer comes back on the next launch since Billy still has no accounts.
 
-If you would rather set this up by hand, add the account to `~/.config/billy/accounts.json` before the first launch, with `configDir` pointing wherever you want.
+If you would rather set this up by hand, add the account to `~/.billy/accounts.json` before the first launch, with `configDir` pointing wherever you want.
