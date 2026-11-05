@@ -1,9 +1,9 @@
 // Where Billy keeps its own things.
 //
-// ~/.billy holds everything Billy writes and manages: the account list and its
-// settings. Content you author and other tools may read too — skills,
-// commands, agents, CLAUDE.md, mcp.json — stays in ~/.agents, which Billy only
-// ever reads.
+// ~/.billy holds everything Billy writes and manages: the account list, its
+// settings, and the shared plugins it clones and links. Content you author and
+// other tools may read too — skills, commands, agents, CLAUDE.md, mcp.json —
+// stays in ~/.agents, which Billy only ever reads.
 
 import { existsSync, mkdirSync, readdirSync, renameSync, rmdirSync } from 'fs';
 import { join, resolve } from 'path';
@@ -12,6 +12,10 @@ import { homedir } from 'os';
 export const BILLY_DIR = resolve(process.env.BILLY_DIR || join(homedir(), '.billy'));
 export const ACCOUNTS_FILE = join(BILLY_DIR, 'accounts.json');
 export const SETTINGS_FILE = join(BILLY_DIR, 'settings.json');
+// One entry per shared plugin, loaded into every account with --plugin-dir.
+export const PLUGINS_DIR = join(BILLY_DIR, 'plugins');
+// The git clones those entries point into: Billy clones, pulls and deletes them.
+export const REPOS_DIR = join(BILLY_DIR, 'repos');
 
 const LEGACY_CONFIG_DIR = join(homedir(), '.config', 'billy');
 

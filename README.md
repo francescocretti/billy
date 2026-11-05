@@ -14,6 +14,7 @@ Account profiles are stored in `~/.billy/accounts.json`. Everything Billy writes
 
 - [Node.js](https://nodejs.org) v18+
 - [Claude Code](https://claude.ai/code) installed and available as `claude` in your PATH
+- `git`, to add and update [shared plugins](#shared-plugins-and-terminal-integration)
 
 ## Installation
 
@@ -105,6 +106,7 @@ Everything that isn't "launch an account" lives behind **⚙ Settings**, so the 
 ◆ Settings
 │ ● Shared resources     on for 1 of 4 accounts
 │ ○ Delete account       the profile and, if you want, its config dir
+│ ○ Shared plugins       warp, sef
 │ ○ Language             English
 │ ○ Where everything lives
 │ ○ ← Back
@@ -116,17 +118,17 @@ Everything that isn't "launch an account" lives behind **⚙ Settings**, so the 
 **Where everything lives** answers the question a tool like this keeps raising, since it juggles directories across two config trees:
 
 ```
-◇  Where everything lives ────────────────────────────────────────╮
-│                                                                 │
-│  Billy folder         /Users/you/.billy                         │
-│  Accounts             4                                         │
-│  Account list         /Users/you/.billy/accounts.json           │
-│  Billy settings       /Users/you/.billy/settings.json           │
-│  Shared resources     /Users/you/.agents                        │
-│  Shared plugins       warp                                      │
-│  Shared MCP servers   none                                      │
-│                                                                 │
-├─────────────────────────────────────────────────────────────────╯
+◇  Where everything lives ─────────────────────────────────────────╮
+│                                                                  │
+│  Billy folder         /Users/you/.billy                          │
+│  Accounts             4                                          │
+│  Account list         /Users/you/.billy/accounts.json            │
+│  Billy settings       /Users/you/.billy/settings.json            │
+│  Shared resources     /Users/you/.agents                         │
+│  Shared plugins       sef, warp (/Users/you/.billy/plugins)      │
+│  Shared MCP servers   none                                       │
+│                                                                  │
+├──────────────────────────────────────────────────────────────────╯
 ```
 
 ### Deleting an account
@@ -190,24 +192,37 @@ For every account with `sharedResources` enabled, Billy launches Claude Code wit
 - OAuth-authenticated remote servers still require logging in once per account: tokens are stored per config dir and can't be shared.
 - Project-scoped servers (`.mcp.json` in a repo) already work across accounts with no help from Billy.
 
-### Shared plugins (and terminal integration)
+## Shared plugins (and terminal integration)
 
 Plugins are installed per config dir (`~/.claude/plugins/`), so a plugin installed on your main account is invisible to every other identity. That's what breaks terminal integrations: Warp, for instance, only recognises a session as Claude Code because the `warp` plugin emits OSC notifications from its hooks. Launch another account and the plugin isn't there, so the terminal sees a plain process and none of its special features light up.
 
-Billy fixes this with Claude Code's `--plugin-dir` flag: every directory in `~/.agents/plugins/` that contains a `.claude-plugin/plugin.json` is loaded at launch, for **every** account (unlike the resources above, this isn't gated on `sharedResources` — `--plugin-dir` is session-only and writes no state anywhere).
+Billy fixes this with shared plugins it manages itself. Go to **⚙ Settings → Shared plugins**:
 
-Symlinks are fine, so you can point at a marketplace checkout and keep getting updates:
-
-```bash
-mkdir -p ~/.agents/plugins
-ln -s ~/.claude/plugins/marketplaces/claude-code-warp/plugins/warp ~/.agents/plugins/warp
 ```
+◆ Shared plugins — loaded into every account
+│ ● sef                          v3.1.0 · Lestat86/software-engineering-foundation
+│ ○ warp                         v2.4.0 · warpdotdev/claude-code-warp
+│ ○ + Add shared plugin
+│ ○ ← Back
+└
+```
+
+**Adding** asks where the plugin comes from:
+
+- **From one of your accounts** — lists the plugins your accounts installed on their own. Billy looks up the marketplace the plugin came from and clones *that* repository; it never links into an account's config dir, so uninstalling the plugin there can't take it away from the others.
+- **From a git repository** — `owner/repo` for GitHub, or any git URL. If the repository is a marketplace offering several plugins, Billy asks which one.
+
+The clone goes in `~/.billy/repos/`, and a link to the plugin's folder in `~/.billy/plugins/`. If some account also has the plugin installed on its own, Billy offers to uninstall it there (`claude plugin uninstall`, user scope only), so every account runs the same copy.
+
+**Opening a plugin** offers **Update** (`git pull` in its clone — nothing updates on its own) and **Remove** (drops the link, and the clone once nothing else points into it).
+
+At launch, every entry in `~/.billy/plugins/` with a `.claude-plugin/plugin.json` is loaded with Claude Code's `--plugin-dir` flag, for **every** account (unlike the resources above, this isn't gated on `sharedResources` — `--plugin-dir` is session-only and writes no state anywhere).
 
 Notes:
 
 - A plugin the account **already installed itself** is skipped rather than injected. Loading both copies would register every hook twice — for Warp, that means duplicate notifications on every event. Installed-but-disabled counts as installed: the account disabled it on purpose.
 - The injected plugin appears as `<name>@inline` instead of `<name>@<marketplace>`; check with `claude plugin list`.
-- Link the marketplace checkout, not `plugins/cache/<marketplace>/<name>/<version>/` — the cache path changes on every version bump.
+- Plugins in the old `~/.agents/plugins/` are no longer loaded; the Shared plugins screen points them out so you can add them again.
 - The Warp plugin needs `jq` on your `PATH`.
 
 ## Running two accounts simultaneously
@@ -220,9 +235,10 @@ Open two terminal windows and run `billy` in each. Select a different account in
 |---|---|
 | `~/.billy/accounts.json` | Account list (name, config dir path, shared-resources flag) |
 | `~/.billy/settings.json` | Billy's own settings — currently just the UI language |
+| `~/.billy/plugins/*` | Shared plugins, loaded into every account via `--plugin-dir` |
+| `~/.billy/repos/*` | Git clones the shared plugins come from, managed by Billy |
 | `~/.agents/skills,commands,agents,CLAUDE.md` | Shared resources, symlinked into opted-in accounts |
 | `~/.agents/mcp.json` | Shared MCP servers, passed with `--mcp-config` |
-| `~/.agents/plugins/*` | Plugins loaded into every account via `--plugin-dir` |
 | `~/.claude-<name>/` | Claude Code config, credentials, and settings for that account — `~/.claude` for an adopted one |
 
 ## Migrating from the default Claude Code setup
