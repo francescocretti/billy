@@ -22,9 +22,13 @@ Account profiles are stored in `~/.billy/accounts.json`. Everything Billy writes
 
 ```bash
 npm install -g @francescocretti/billy
+# or, with Yarn Classic (1.x)
+yarn global add @francescocretti/billy
 ```
 
-This installs the `billy` command. Update it later with the same command; [CHANGELOG.md](CHANGELOG.md) says what changed.
+This installs the `billy` command. Update it later with the same command (`yarn global upgrade @francescocretti/billy` with Yarn); [CHANGELOG.md](CHANGELOG.md) says what changed.
+
+Yarn 2 and later have no global installs: use npm there. With Yarn Classic, if your shell can't find `billy` afterwards, add the directory printed by `yarn global bin` to your `PATH`.
 
 **From source**, to work on Billy itself:
 
