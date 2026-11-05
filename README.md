@@ -21,28 +21,25 @@ Account profiles are stored in `~/.billy/accounts.json`. Everything Billy writes
 ## Installation
 
 ```bash
+npm install -g @francescocretti/billy
+# or, with Yarn Classic (1.x)
+yarn global add @francescocretti/billy
+```
+
+This installs the `billy` command. Update it later with the same command (`yarn global upgrade @francescocretti/billy` with Yarn); [CHANGELOG.md](CHANGELOG.md) says what changed.
+
+Yarn 2 and later have no global installs: use npm there. With Yarn Classic, if your shell can't find `billy` afterwards, add the directory printed by `yarn global bin` to your `PATH`.
+
+**From source**, to work on Billy itself:
+
+```bash
 git clone https://github.com/francescocretti/billy.git
 cd billy
 npm install
-```
-
-Then choose how to install the `billy` command globally:
-
-**Option A — `npm link` (recommended while developing)**
-
-```bash
 npm link
 ```
 
-Creates a symlink from the global npm bin to this project folder. Source changes take effect immediately without reinstalling. If you move or delete the project folder, the command breaks.
-
-**Option B — `npm install -g .` (recommended for stable use)**
-
-```bash
-npm install -g .
-```
-
-Installs billy as a proper global package, independent of the project folder's location. After any future source change, re-run this command to update.
+`npm link` points the global `billy` command at this folder, so source changes take effect immediately. If you move or delete the folder, the command breaks. Run `npm uninstall -g @francescocretti/billy` first if you had installed it from npm.
 
 ## Usage
 
@@ -261,11 +258,14 @@ Billy follows [Semantic Versioning](https://semver.org/) and records every relea
    git commit -am "chore(release): 1.2.0"
    ```
 
-4. Once that commit is on `main`, tag it and publish the release:
+4. Once that commit is on `main`, tag it, publish the release, and publish to npm from that same commit:
 
    ```bash
    git tag -a v1.2.0 -m "v1.2.0"
    git push origin v1.2.0
    gh release create v1.2.0 --title v1.2.0 --notes "<the version's section from CHANGELOG.md>"
+   npm publish
    ```
+
+   Check what will be published with `npm pack --dry-run` first: only the `.mjs` modules, README, changelog and license belong in the package.
 

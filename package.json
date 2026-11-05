@@ -1,10 +1,38 @@
 {
-  "name": "billy",
-  "version": "1.0.0",
-  "description": "Claude Code account switcher — in onore di Billy Milligan",
+  "name": "@francescocretti/billy",
+  "version": "1.0.1",
+  "description": "Switch between Claude Code accounts, and share skills, plugins and MCP servers across them",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "cli",
+    "accounts",
+    "switcher",
+    "plugins"
+  ],
+  "homepage": "https://github.com/francescocretti/billy#readme",
+  "bugs": {
+    "url": "https://github.com/francescocretti/billy/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/francescocretti/billy.git"
+  },
+  "license": "MIT",
+  "author": "Francesco Cretti",
   "type": "module",
   "bin": {
-    "billy": "./index.mjs"
+    "billy": "index.mjs"
+  },
+  "files": [
+    "*.mjs",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "@clack/prompts": "^0.9.0"
