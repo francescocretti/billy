@@ -1,6 +1,6 @@
 {
   "name": "billy",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "description": "Claude Code account switcher — in onore di Billy Milligan",
   "type": "module",
   "bin": {

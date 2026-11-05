@@ -4,6 +4,8 @@ All notable changes to Billy are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-05
+
 ### Added
 
 - **Shared plugins screen** (⚙ Settings → Shared plugins). It lists the plugins loaded into every account and adds new ones, either from a plugin one of your accounts already installed or from any git repository. Each one can be updated (`git pull`) or removed. After adding a plugin, Billy offers to uninstall the private copies accounts already had, so every account runs the same one.
@@ -55,7 +57,8 @@ All notable changes to Billy are documented here. The format follows [Keep a Cha
 - Pick a Claude Code account at launch, or add a new one.
 - Each account runs with its own config dir (`~/.claude-<name>`) through `CLAUDE_CONFIG_DIR`, keeping credentials and settings isolated.
 
-[Unreleased]: https://github.com/francescocretti/billy/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/francescocretti/billy/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/francescocretti/billy/compare/v0.3.0...v1.0.0
 [0.3.0]: https://github.com/francescocretti/billy/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/francescocretti/billy/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/francescocretti/billy/releases/tag/v0.1.0
