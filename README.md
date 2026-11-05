@@ -248,3 +248,24 @@ bash docs/demo/record.sh plugins   # just docs/demo/plugins.tape
 
 The script runs Billy against a throwaway home with demo accounts and a stubbed `claude`, so your real setup never ends up in a recording — and is never touched. It clones the demo's shared plugins from GitHub, so it needs network access.
 
+## Releasing
+
+Billy follows [Semantic Versioning](https://semver.org/) and records every release in [CHANGELOG.md](CHANGELOG.md). Commits follow [Conventional Commits](https://www.conventionalcommits.org/): `feat:` means a minor bump, `fix:` a patch, and `BREAKING CHANGE:` a major.
+
+1. While working, add each user-visible change under **Unreleased** in `CHANGELOG.md`.
+2. To release, rename **Unreleased** to the new version with today's date, add an empty **Unreleased** above it, and update the comparison links at the bottom.
+3. Bump the version and commit both files:
+
+   ```bash
+   npm version 1.2.0 --no-git-tag-version
+   git commit -am "chore(release): 1.2.0"
+   ```
+
+4. Once that commit is on `main`, tag it and publish the release:
+
+   ```bash
+   git tag -a v1.2.0 -m "v1.2.0"
+   git push origin v1.2.0
+   gh release create v1.2.0 --title v1.2.0 --notes "<the version's section from CHANGELOG.md>"
+   ```
+
