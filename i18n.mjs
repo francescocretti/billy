@@ -30,7 +30,8 @@ const MESSAGES = {
     'menu.hint.shared': 'shared',
     'menu.notFound': 'Account "{id}" not found in accounts.json.',
 
-    'accounts.malformed': 'Warning: accounts.json is malformed. Starting with an empty account list.',
+    'accounts.malformed': "{file} can't be read ({message}). Fix it by hand and run billy again — nothing has been changed.",
+    'accounts.notList': 'expected a list of accounts',
 
     'adopt.title': 'Existing Claude Code setup found',
     'adopt.dir': 'Directory',
@@ -143,7 +144,8 @@ const MESSAGES = {
     'menu.hint.shared': 'condivise',
     'menu.notFound': 'Account "{id}" non trovato in accounts.json.',
 
-    'accounts.malformed': 'Attenzione: accounts.json è malformato. Riparto con una lista account vuota.',
+    'accounts.malformed': 'Impossibile leggere {file} ({message}). Correggilo a mano e rilancia billy: non è stato modificato nulla.',
+    'accounts.notList': 'mi aspettavo una lista di account',
 
     'adopt.title': 'Trovata una configurazione Claude Code esistente',
     'adopt.dir': 'Cartella',

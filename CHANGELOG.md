@@ -10,6 +10,7 @@ All notable changes to Billy are documented here. The format follows [Keep a Cha
 - An account adopted from `~/.claude` launches with `CLAUDE_CONFIG_DIR` unset, like a plain `claude`. Setting it made Claude Code look for its account file inside `~/.claude`, missing what the default setup recorded in `~/.claude.json`. Uninstalling a private plugin copy from that account follows the same rule.
 - A shared plugin whose manifest name isn't a plain folder name (such as `../../x`) is refused, instead of being linked outside `~/.billy/plugins/`.
 - Two different repositories with the same `owner/repo` name, such as a fork on another host, no longer share one clone in `~/.billy/repos/`. Billy reuses a clone only when its origin is the repository asked for, and treats `https://` and `git@` URLs of the same repository as the same. A URL ending in `.git/` now maps to the same clone as one without.
+- A malformed `~/.billy/accounts.json` stops Billy with the parse error instead of being read as an empty list. Before, the next save (adopting `~/.claude`, adding an account) overwrote the file and every account in it was lost.
 
 ## [1.0.1] - 2026-11-05
 
