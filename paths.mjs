@@ -39,3 +39,22 @@ function migrateLegacyConfig() {
 
 // Runs on import, before i18n reads settings.json or the menu reads accounts.
 migrateLegacyConfig();
+
+// Claude Code's own default config dir, where a plain `claude` keeps things.
+export const CLAUDE_DEFAULT_DIR = join(homedir(), '.claude');
+
+/**
+ * The environment to run `claude` with for the account at `configDir`.
+ *
+ * The default config dir is reached exactly like a plain `claude` — with
+ * CLAUDE_CONFIG_DIR unset. Setting it to ~/.claude, even though that is the
+ * same directory, makes Claude Code look for its account file inside it
+ * instead of at ~/.claude.json: a fresh state, out of step with
+ * every IDE extension and script that runs `claude` on this machine.
+ */
+export function claudeEnv(configDir) {
+  const env = { ...process.env };
+  if (resolve(configDir) === CLAUDE_DEFAULT_DIR) delete env.CLAUDE_CONFIG_DIR;
+  else env.CLAUDE_CONFIG_DIR = configDir;
+  return env;
+}

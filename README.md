@@ -8,7 +8,7 @@ Billy is a minimal CLI tool for managing multiple [Claude Code](https://claude.a
 
 ## How it works
 
-Each account gets its own configuration directory (`~/.claude-<name>`), passed to Claude Code via the `CLAUDE_CONFIG_DIR` environment variable. The first time you launch a new account, Claude Code will walk you through login. After that, credentials are persisted in that directory and login is never asked again. An account adopted from an existing `~/.claude` keeps that directory and its login, so it never asks.
+Each account gets its own configuration directory (`~/.claude-<name>`), passed to Claude Code via the `CLAUDE_CONFIG_DIR` environment variable. The first time you launch a new account, Claude Code will walk you through login. After that, credentials are persisted in that directory and login is never asked again. An account adopted from an existing `~/.claude` is the exception: Billy launches it with `CLAUDE_CONFIG_DIR` unset, exactly like a plain `claude`, so it keeps its login, its `~/.claude.json` and everything else, and never asks.
 
 Account profiles are stored in `~/.billy/accounts.json`. Everything Billy writes and manages lives in `~/.billy/`; content you author — skills, commands, agents, `CLAUDE.md`, MCP servers — stays in `~/.agents/`, which Billy only reads. (Older versions used `~/.config/billy/`: Billy moves it over on first launch.) To keep Billy's folder elsewhere, set the `BILLY_DIR` environment variable — Billy then skips that migration.
 
@@ -219,7 +219,7 @@ Open two terminal windows and run `billy` in each. Select a different account in
 | `~/.billy/repos/*` | Git clones the shared plugins come from, managed by Billy |
 | `~/.agents/skills,commands,agents,CLAUDE.md` | Shared resources, symlinked into opted-in accounts |
 | `~/.agents/mcp.json` | Shared MCP servers, passed with `--mcp-config` |
-| `~/.claude-<name>/` | Claude Code config, credentials, and settings for that account — `~/.claude` for an adopted one |
+| `~/.claude-<name>/` | Claude Code config, credentials, and settings for that account — `~/.claude` (plus `~/.claude.json`) for an adopted one |
 
 ## Migrating from the default Claude Code setup
 
@@ -228,6 +228,8 @@ If you used Claude Code before installing Billy, your history, projects, setting
 Then the usual account list takes over, now with that account in it.
 
 There is nothing else to decide, because adopting the directory costs nothing and takes nothing away: `~/.claude` stays exactly where it is, and anything that runs `claude` without Billy — a script, an IDE extension, a `claude -p` in a pipeline — keeps reaching it. Billy simply records it as an account so it appears in the list alongside the ones you add later.
+
+Billy recognises that setup by its account file. Without `CLAUDE_CONFIG_DIR`, Claude Code keeps it in your home as `~/.claude.json`, next to the `~/.claude` folder rather than inside it — that is the normal layout, not something to fix, and Billy never moves it. When you launch the adopted account, Billy leaves `CLAUDE_CONFIG_DIR` unset, as a plain `claude` would: setting it to `~/.claude` would make Claude Code look for the account file inside the folder, and miss everything recorded in `~/.claude.json`.
 
 Cancelling the name prompt adopts nothing, and the offer comes back on the next launch since Billy still has no accounts.
 
