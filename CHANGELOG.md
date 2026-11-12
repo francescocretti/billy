@@ -8,6 +8,7 @@ All notable changes to Billy are documented here. The format follows [Keep a Cha
 
 - The first run now finds an existing Claude Code setup. Billy looked for `~/.claude/.claude.json`, but a default setup keeps that file in your home as `~/.claude.json`, so the offer to adopt `~/.claude` never appeared.
 - An account adopted from `~/.claude` launches with `CLAUDE_CONFIG_DIR` unset, like a plain `claude`. Setting it made Claude Code look for its account file inside `~/.claude`, missing what the default setup recorded in `~/.claude.json`. Uninstalling a private plugin copy from that account follows the same rule.
+- A malformed `~/.billy/accounts.json` stops Billy with the parse error instead of being read as an empty list. Before, the next save (adopting `~/.claude`, adding an account) overwrote the file and every account in it was lost.
 
 ## [1.0.1] - 2026-11-05
 
