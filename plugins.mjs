@@ -10,6 +10,7 @@
 // its return value instead of throwing, so the menu can always carry on.
 
 import { spawnSync } from 'child_process';
+import { createHash } from 'crypto';
 import {
   existsSync,
   lstatSync,
@@ -21,7 +22,7 @@ import {
   symlinkSync,
   unlinkSync,
 } from 'fs';
-import { dirname, join, relative, resolve, sep } from 'path';
+import { basename, dirname, join, relative, resolve, sep } from 'path';
 import { PLUGINS_DIR, REPOS_DIR, claudeEnv } from './paths.mjs';
 import { AGENTS_DIR } from './sync.mjs';
 
@@ -142,23 +143,59 @@ export function normalizeRepoInput(input) {
   return /^[\w.-]+\/[\w.-]+$/.test(value) ? `https://github.com/${value}.git` : value;
 }
 
+// A repo's identity for comparing URLs: host/owner/repo, with the scheme, the
+// user, the port, a trailing .git and slashes dropped and the host lowercased,
+// so https://github.com/o/r and git@github.com:o/r.git come out the same.
+function repoKey(url) {
+  let s = url.trim().replace(/\/+$/, '').replace(/\.git$/, '');
+  const scp = s.match(/^[\w.-]+@([^:/]+):(.+)$/); // git@host:owner/repo
+  if (scp) s = `${scp[1]}/${scp[2]}`;
+  else s = s.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '').replace(/^[^@/]+@/, '');
+  const [host, ...rest] = s.split('/');
+  return [host.toLowerCase().replace(/:\d+$/, ''), ...rest].join('/');
+}
+
+function originOf(dir) {
+  const { ok, out } = git(['remote', 'get-url', 'origin'], dir);
+  return ok ? out : null;
+}
+
 // owner__repo, from the last two segments of a URL or path.
 function repoSlug(url) {
   const parts = url
-    .replace(/\.git$/, '')
     .replace(/\/+$/, '')
+    .replace(/\.git$/, '')
     .split(/[/:]/)
     .filter(Boolean);
   return parts.slice(-2).join('__').replace(/[^\w.-]/g, '-');
 }
 
 /**
- * Clone `url` into REPOS_DIR, or reuse the clone already there.
- * Returns { dir, fresh } or { error }.
+ * Clone `url` into REPOS_DIR, or reuse the clone of that same repo already
+ * there. Returns { dir, fresh } or { error }.
+ *
+ * The folder is owner__repo. Two different repos can share that name — the
+ * same owner/repo on another host, say — so a folder is reused only when its
+ * origin is the repo asked for; otherwise the new clone gets a short hash of
+ * the URL as a suffix. Existing clones keep their names.
  */
 export function cloneRepo(url) {
-  const dir = join(REPOS_DIR, repoSlug(url));
-  if (existsSync(dir)) return { dir, fresh: false };
+  const slug = repoSlug(url);
+  const key = repoKey(url);
+  const candidates = [
+    join(REPOS_DIR, slug),
+    join(REPOS_DIR, `${slug}-${createHash('sha256').update(key).digest('hex').slice(0, 8)}`),
+  ];
+  let dir = null;
+  for (const candidate of candidates) {
+    if (!existsSync(candidate)) {
+      dir = candidate;
+      break;
+    }
+    const origin = originOf(candidate);
+    if (origin && repoKey(origin) === key) return { dir: candidate, fresh: false };
+  }
+  if (!dir) return { error: `${candidates[1]} already holds a different repository` };
   mkdirSync(REPOS_DIR, { recursive: true });
   const { ok, out } = git(['clone', '--quiet', url, dir]);
   if (!ok) {
@@ -192,15 +229,23 @@ export function pluginsInRepo(repoDir) {
     .filter(p => p && p.name);
 }
 
+// What a plugin name may look like before it becomes a path. Claude Code's
+// plugin names are kebab-case, so this refuses nothing real — only a name like
+// ../../x that would put the link outside PLUGINS_DIR.
+const PLUGIN_NAME = /^[a-z0-9][a-z0-9._-]*$/i;
+
 /**
  * Share the plugin at `path` with every account by linking it into
- * PLUGINS_DIR under its manifest name. Returns { name } or { error, name? }.
+ * PLUGINS_DIR under its manifest name. Returns { name } or { error, name? },
+ * error being 'manifest', 'badName' or 'exists'.
  */
 export function linkPlugin(path) {
   const data = manifest(path);
   if (!data) return { error: 'manifest' };
-  const name = data.name || path.split(sep).pop();
+  // The name comes from someone else's repo: check it before using it as a path.
+  const name = typeof data.name === 'string' && data.name ? data.name : basename(path);
   const link = join(PLUGINS_DIR, name);
+  if (!PLUGIN_NAME.test(name) || dirname(link) !== PLUGINS_DIR) return { error: 'badName', name };
   let taken = false;
   try {
     lstatSync(link);

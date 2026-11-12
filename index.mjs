@@ -49,14 +49,26 @@ import {
 } from './plugins.mjs';
 import { LANGUAGES, SETTINGS_FILE, getLanguage, setLanguage, t } from './i18n.mjs';
 
+// A file that exists but can't be read as a list of accounts stops Billy
+// instead of reading as "no accounts". Carrying on with an empty list would
+// let the next save — adopting ~/.claude, adding an account — overwrite the
+// file, and every account in it would be lost over a stray comma. Billy writes
+// nothing until the file is fixed by hand.
 function loadAccounts() {
   if (!existsSync(ACCOUNTS_FILE)) return [];
+  let accounts;
   try {
-    return JSON.parse(readFileSync(ACCOUNTS_FILE, 'utf8'));
-  } catch {
-    console.error(t('accounts.malformed'));
-    return [];
+    accounts = JSON.parse(readFileSync(ACCOUNTS_FILE, 'utf8'));
+  } catch (err) {
+    malformedAccounts(err.message.replace(/\s+/g, ' ').trim());
   }
+  if (!Array.isArray(accounts)) malformedAccounts(t('accounts.notList'));
+  return accounts;
+}
+
+function malformedAccounts(message) {
+  cancel(t('accounts.malformed', { file: tilde(ACCOUNTS_FILE), message }));
+  process.exit(1);
 }
 
 function saveAccounts(accounts) {
@@ -405,7 +417,8 @@ async function sharePluginFromRepo(accounts, url, wanted) {
   const linked = linkPlugin(chosen.path);
   if (linked.error) {
     if (cloned.fresh) dropUnusedRepo(cloned.dir);
-    log.error(t(linked.error === 'exists' ? 'plugins.exists' : 'plugins.noManifest', linked));
+    const key = { exists: 'plugins.exists', badName: 'plugins.badName' }[linked.error] ?? 'plugins.noManifest';
+    log.error(t(key, linked));
     return;
   }
 

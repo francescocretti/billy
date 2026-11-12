@@ -30,7 +30,8 @@ const MESSAGES = {
     'menu.hint.shared': 'shared',
     'menu.notFound': 'Account "{id}" not found in accounts.json.',
 
-    'accounts.malformed': 'Warning: accounts.json is malformed. Starting with an empty account list.',
+    'accounts.malformed': "{file} can't be read ({message}). Fix it by hand and run billy again — nothing has been changed.",
+    'accounts.notList': 'expected a list of accounts',
 
     'adopt.title': 'Existing Claude Code setup found',
     'adopt.dir': 'Directory',
@@ -110,6 +111,7 @@ const MESSAGES = {
     'plugins.noneInRepo': 'No plugin to share in {url} (or they are all shared already).',
     'plugins.exists': '"{name}" is already a shared plugin.',
     'plugins.noManifest': 'That folder has no .claude-plugin/plugin.json.',
+    'plugins.badName': 'The plugin\'s name, "{name}", isn\'t a valid folder name. Billy didn\'t add it.',
     'plugins.added': '"{plugin}" is now shared: every account loads it from the next launch.',
     'plugins.uninstallOwn': '"{account}" also has {plugin} installed on its own. Uninstall it there, so it uses the shared copy?',
     'plugins.uninstalling': 'Uninstalling from "{account}"',
@@ -143,7 +145,8 @@ const MESSAGES = {
     'menu.hint.shared': 'condivise',
     'menu.notFound': 'Account "{id}" non trovato in accounts.json.',
 
-    'accounts.malformed': 'Attenzione: accounts.json è malformato. Riparto con una lista account vuota.',
+    'accounts.malformed': 'Impossibile leggere {file} ({message}). Correggilo a mano e rilancia billy: non è stato modificato nulla.',
+    'accounts.notList': 'mi aspettavo una lista di account',
 
     'adopt.title': 'Trovata una configurazione Claude Code esistente',
     'adopt.dir': 'Cartella',
@@ -223,6 +226,7 @@ const MESSAGES = {
     'plugins.noneInRepo': 'Nessun plugin da condividere in {url} (o sono già tutti condivisi).',
     'plugins.exists': '"{name}" è già un plugin condiviso.',
     'plugins.noManifest': 'Quella cartella non ha .claude-plugin/plugin.json.',
+    'plugins.badName': 'Il nome del plugin, "{name}", non è un nome di cartella valido. Billy non l\'ha aggiunto.',
     'plugins.added': '"{plugin}" ora è condiviso: ogni account lo carica dal prossimo avvio.',
     'plugins.uninstallOwn': '"{account}" ha anche una sua copia di {plugin}. La disinstallo da lì, così usa quella condivisa?',
     'plugins.uninstalling': 'Disinstallazione da "{account}"',
