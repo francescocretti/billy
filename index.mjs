@@ -95,10 +95,19 @@ function slugify(name) {
   return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
+// The id, and with it the config dir ~/.claude-<id>, is built from the letters
+// and digits of the name. A name with none — "💼", "!!!" — would give an empty
+// id and a directory called ~/.claude-, so it is refused while typing.
+function validateName(value) {
+  if (!value.trim()) return t('new.nameEmpty');
+  if (!slugify(value)) return t('new.nameNoLetters');
+  return undefined;
+}
+
 async function createAccount(accounts) {
   const name = await text({
     message: t('new.name'),
-    validate: v => (!v.trim() ? t('new.nameEmpty') : undefined),
+    validate: validateName,
   });
   if (isCancel(name)) bail();
 
@@ -277,7 +286,7 @@ async function adoptExistingSetup(accounts) {
   const name = await text({
     message: t('adopt.name'),
     initialValue: 'personal',
-    validate: v => (!v.trim() ? t('new.nameEmpty') : undefined),
+    validate: validateName,
   });
   // Cancelling adopts nothing and leaves the list empty; the offer comes back
   // on the next launch, since Billy still has no accounts.

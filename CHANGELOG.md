@@ -8,6 +8,7 @@ All notable changes to Billy are documented here. The format follows [Keep a Cha
 
 - The first run now finds an existing Claude Code setup. Billy looked for `~/.claude/.claude.json`, but a default setup keeps that file in your home as `~/.claude.json`, so the offer to adopt `~/.claude` never appeared.
 - An account adopted from `~/.claude` launches with `CLAUDE_CONFIG_DIR` unset, like a plain `claude`. Setting it made Claude Code look for its account file inside `~/.claude`, missing what the default setup recorded in `~/.claude.json`. Uninstalling a private plugin copy from that account follows the same rule.
+- An account name with no letters or digits, such as `💼` or `!!!`, is refused while you type it. It used to give an empty id and a config dir called `~/.claude-`.
 
 ## [1.0.1] - 2026-11-05
 
