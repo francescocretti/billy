@@ -42,6 +42,7 @@ const MESSAGES = {
 
     'new.name': 'Account name (e.g. work, personal)',
     'new.nameEmpty': 'The name cannot be empty.',
+    'new.nameNoLetters': 'The name needs at least one letter (a-z) or digit.',
     'new.exists': 'An account named "{name}" already exists.',
 
     'shared.prompt': 'Import shared resources (skills, commands, agents, CLAUDE.md) from ~/.agents as symlinks?',
@@ -156,6 +157,7 @@ const MESSAGES = {
 
     'new.name': 'Nome account (es. work, personal)',
     'new.nameEmpty': 'Il nome non può essere vuoto.',
+    'new.nameNoLetters': 'Il nome deve contenere almeno una lettera (a-z) o una cifra.',
     'new.exists': 'Esiste già un account chiamato "{name}".',
 
     'shared.prompt': 'Importare le risorse condivise (skills, commands, agents, CLAUDE.md) da ~/.agents come symlink?',
