@@ -23,7 +23,13 @@ import {
 } from 'fs';
 import { join, sep } from 'path';
 import { homedir } from 'os';
-import { ACCOUNTS_FILE, BILLY_DIR, PLUGINS_DIR } from './paths.mjs';
+import {
+  ACCOUNTS_FILE,
+  BILLY_DIR,
+  CLAUDE_DEFAULT_DIR,
+  PLUGINS_DIR,
+  claudeEnv,
+} from './paths.mjs';
 import { AGENTS_DIR, syncSharedResources, sharedMcpConfig } from './sync.mjs';
 import {
   cloneRepo,
@@ -42,8 +48,6 @@ import {
   updatePlugin,
 } from './plugins.mjs';
 import { LANGUAGES, SETTINGS_FILE, getLanguage, setLanguage, t } from './i18n.mjs';
-
-const CLAUDE_DEFAULT_DIR = join(homedir(), '.claude');
 
 function loadAccounts() {
   if (!existsSync(ACCOUNTS_FILE)) return [];
@@ -222,12 +226,22 @@ async function chooseLanguage() {
   log.success(t('language.saved', { label: LANGUAGES.find(l => l.value === selected).label }));
 }
 
-// A summary of the default Claude Code config dir, or null when there is no
-// real setup there. `.claude.json` is the marker: the directory alone gets
-// created by all sorts of things, an account file means it has been used.
+// Where the default setup keeps its account file. Without CLAUDE_CONFIG_DIR,
+// Claude Code writes it next to ~/.claude, as ~/.claude.json in your home —
+// only a custom config dir gets one inside. The second path covers a setup
+// that was once run with CLAUDE_CONFIG_DIR=~/.claude.
+function defaultConfigFile() {
+  return [join(homedir(), '.claude.json'), join(CLAUDE_DEFAULT_DIR, '.claude.json')].find(f =>
+    existsSync(f),
+  );
+}
+
+// A summary of the default Claude Code setup, or null when there is none.
+// `.claude.json` is the marker: the ~/.claude directory alone gets created by
+// all sorts of things, an account file means Claude Code has been used.
 function describeDefaultSetup() {
-  const configFile = join(CLAUDE_DEFAULT_DIR, '.claude.json');
-  if (!existsSync(configFile)) return null;
+  const configFile = defaultConfigFile();
+  if (!configFile) return null;
 
   let email = null;
   try {
@@ -631,7 +645,7 @@ async function main() {
   outro(t('launch', { name: account.name }));
 
   const child = spawn('claude', claudeArgs, {
-    env: { ...process.env, CLAUDE_CONFIG_DIR: account.configDir },
+    env: claudeEnv(account.configDir),
     stdio: 'inherit',
   });
 

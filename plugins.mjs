@@ -22,7 +22,7 @@ import {
   unlinkSync,
 } from 'fs';
 import { dirname, join, relative, resolve, sep } from 'path';
-import { PLUGINS_DIR, REPOS_DIR } from './paths.mjs';
+import { PLUGINS_DIR, REPOS_DIR, claudeEnv } from './paths.mjs';
 import { AGENTS_DIR } from './sync.mjs';
 
 function readJson(file) {
@@ -256,7 +256,7 @@ export function dropUnusedRepo(dir) {
  */
 export function uninstallFromAccount(configDir, id) {
   const res = spawnSync('claude', ['plugin', 'uninstall', id], {
-    env: { ...process.env, CLAUDE_CONFIG_DIR: configDir },
+    env: claudeEnv(configDir),
     encoding: 'utf8',
   });
   if (res.error) return { ok: false, out: res.error.message };
