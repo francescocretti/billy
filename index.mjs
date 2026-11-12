@@ -396,7 +396,8 @@ async function sharePluginFromRepo(accounts, url, wanted) {
   const linked = linkPlugin(chosen.path);
   if (linked.error) {
     if (cloned.fresh) dropUnusedRepo(cloned.dir);
-    log.error(t(linked.error === 'exists' ? 'plugins.exists' : 'plugins.noManifest', linked));
+    const key = { exists: 'plugins.exists', badName: 'plugins.badName' }[linked.error] ?? 'plugins.noManifest';
+    log.error(t(key, linked));
     return;
   }
 
