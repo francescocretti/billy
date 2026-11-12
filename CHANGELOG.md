@@ -4,6 +4,8 @@ All notable changes to Billy are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-11-12
+
 ### Fixed
 
 - The first run now finds an existing Claude Code setup. Billy looked for `~/.claude/.claude.json`, but a default setup keeps that file in your home as `~/.claude.json`, so the offer to adopt `~/.claude` never appeared.
@@ -73,7 +75,8 @@ All notable changes to Billy are documented here. The format follows [Keep a Cha
 - Pick a Claude Code account at launch, or add a new one.
 - Each account runs with its own config dir (`~/.claude-<name>`) through `CLAUDE_CONFIG_DIR`, keeping credentials and settings isolated.
 
-[Unreleased]: https://github.com/francescocretti/billy/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/francescocretti/billy/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/francescocretti/billy/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/francescocretti/billy/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/francescocretti/billy/compare/v0.3.0...v1.0.0
 [0.3.0]: https://github.com/francescocretti/billy/compare/v0.2.0...v0.3.0
