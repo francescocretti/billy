@@ -203,6 +203,7 @@ Notes:
 - A plugin the account **already installed itself** is skipped rather than injected. Loading both copies would register every hook twice — for Warp, that means duplicate notifications on every event. Installed-but-disabled counts as installed: the account disabled it on purpose.
 - The injected plugin appears as `<name>@inline` instead of `<name>@<marketplace>`; check with `claude plugin list`.
 - Plugins in the old `~/.agents/plugins/` are no longer loaded; the Shared plugins screen points them out so you can add them again.
+- Running Billy in Warp, an account that would launch without the `warp` plugin (neither shared nor installed in the account) gets a warning at launch, pointing to the Shared plugins screen.
 - The Warp plugin needs `jq` on your `PATH`.
 
 ## Running two accounts simultaneously

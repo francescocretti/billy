@@ -664,6 +664,14 @@ async function main() {
     log.step(t('plugins.installed', { list: alreadyInstalled.map(p => p.name).join(', ') }));
   }
 
+  // Warp only recognises a Claude Code session through its plugin's hooks, so
+  // without it the session looks like any other process — and nothing says
+  // why. Point it out when this account would launch without it. Installed in
+  // the account (even disabled, on purpose) counts as taken care of.
+  if (process.env.TERM_PROGRAM === 'WarpTerminal' && !installed.has('warp') && !injected.some(p => p.name === 'warp')) {
+    log.warn(t('plugins.warpMissing', { name: account.name }));
+  }
+
   outro(t('launch', { name: account.name }));
 
   const child = spawn('claude', claudeArgs, {

@@ -4,6 +4,10 @@ All notable changes to Billy are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+### Added
+
+- A warning at launch when you run Billy in Warp and the account would start without the `warp` plugin, neither shared nor installed in the account itself. Without it Warp doesn't recognise the session — no tab icon, no Warp UI, no notifications — and nothing said why.
+
 ## [1.0.2] - 2026-11-12
 
 ### Fixed
