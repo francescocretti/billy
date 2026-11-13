@@ -89,6 +89,7 @@ const MESSAGES = {
     'mcp.step': 'Shared MCP servers loaded from {file}',
     'plugins.step': 'Shared plugins: {list}',
     'plugins.installed': 'Already installed in this account, not injected: {list}',
+    'plugins.warpMissing': 'You are in Warp, but the warp plugin is not loaded for "{name}": no tab icon, Warp UI or notifications. Add it in ⚙ Settings → Shared plugins.',
 
     'settings.plugins': 'Shared plugins',
     'info.billyDir': 'Billy folder',
@@ -204,6 +205,7 @@ const MESSAGES = {
     'mcp.step': 'Server MCP condivisi caricati da {file}',
     'plugins.step': 'Plugin condivisi: {list}',
     'plugins.installed': 'Già installati in questo account, non iniettati: {list}',
+    'plugins.warpMissing': 'Sei in Warp, ma il plugin warp non è caricato per "{name}": niente icona nella tab, UI di Warp o notifiche. Aggiungilo da ⚙ Impostazioni → Plugin condivisi.',
 
     'settings.plugins': 'Plugin condivisi',
     'info.billyDir': 'Cartella Billy',
