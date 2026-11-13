@@ -4,6 +4,8 @@ All notable changes to Billy are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-13
+
 ### Added
 
 - A warning at launch when you run Billy in Warp and the account would start without the `warp` plugin, neither shared nor installed in the account itself. Without it Warp doesn't recognise the session — no tab icon, no Warp UI, no notifications — and nothing said why.
@@ -79,7 +81,8 @@ All notable changes to Billy are documented here. The format follows [Keep a Cha
 - Pick a Claude Code account at launch, or add a new one.
 - Each account runs with its own config dir (`~/.claude-<name>`) through `CLAUDE_CONFIG_DIR`, keeping credentials and settings isolated.
 
-[Unreleased]: https://github.com/francescocretti/billy/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/francescocretti/billy/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/francescocretti/billy/compare/v1.0.2...v1.1.0
 [1.0.2]: https://github.com/francescocretti/billy/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/francescocretti/billy/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/francescocretti/billy/compare/v0.3.0...v1.0.0
